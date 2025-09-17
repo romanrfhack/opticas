@@ -1,6 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { NgIf } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -10,13 +10,19 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { AuthService } from '../../auth/auth.service';
+import { SucursalSwitcherComponent } from '../../shared/sucursal-switcher-component/sucursal-switcher-component';
+import { CanDirective } from '../../shared/can.directive';
+
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [
-    RouterOutlet, RouterLink, RouterLinkActive,
-    MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule, MatListModule, MatDividerModule
+  imports: [ CommonModule,
+    RouterOutlet, RouterLink, RouterLinkActive, MatSnackBarModule,
+    MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule, MatListModule, MatDividerModule, 
+    SucursalSwitcherComponent, CanDirective
   ],
   template: `
   <!-- usa 100dvh para móviles -->
@@ -32,6 +38,16 @@ import { MatDividerModule } from '@angular/material/divider';
         <div class="text-xs text-gray-500">Panel de administración</div>
       </div>
       <mat-divider></mat-divider>
+
+      <app-sucursal-switcher></app-sucursal-switcher>
+
+
+      <span class="flex-1"></span>
+      <div *ngIf="auth.user() as u" class="flex items-center gap-3">
+        <span class="text-sm text-gray-600">{{ u.name }} — Sucursal: {{ u.sucursalId | slice:0:8 }}</span>
+        <button mat-button (click)="logout()">Salir</button>
+      </div>
+
 
       <mat-nav-list>
         <a mat-list-item routerLink="/dashboard" routerLinkActive="active">
@@ -64,8 +80,13 @@ import { MatDividerModule } from '@angular/material/divider';
         </button>
         <span class="ml-2 font-semibold">Óptica</span>
         <span class="flex-1"></span>
-        <button mat-button>Ayuda</button>
-        <button mat-button>Salir</button>
+        <button mat-button>Ayuda</button>                
+        <app-sucursal-switcher></app-sucursal-switcher>
+        <div *ngIf="auth.user() as u" class="flex items-center gap-3">
+        <span class="text-sm text-gray-600">{{ u.name }} — Sucursal: {{ u.sucursalId | slice:0:8 }}</span>
+        <button mat-button (click)="logout()">Salir</button>
+        <a mat-button routerLink="/perfil">Mi perfil</a>
+      </div>
       </mat-toolbar>
 
       <!-- scroll SOLO aquí, no en el body -->
@@ -87,6 +108,8 @@ import { MatDividerModule } from '@angular/material/divider';
 export class ShellComponent {
   opened = signal(true);
   handset = signal(false);
+  auth = inject(AuthService);
+
 
   constructor(bp: BreakpointObserver) {
     bp.observe([Breakpoints.Handset]).pipe(takeUntilDestroyed())
@@ -94,4 +117,5 @@ export class ShellComponent {
   }
 
   toggle(){ this.opened.set(!this.opened()); }
+  logout(){ this.auth.logout(); location.href = '/login'; }
 }
