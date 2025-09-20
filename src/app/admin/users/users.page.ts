@@ -1,198 +1,167 @@
-import { Component, Inject, inject, signal } from '@angular/core';
+
+import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormControl } from '@angular/forms';
+import { debounceTime, distinctUntilChanged, startWith, switchMap, tap } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+
 import { MatTableModule } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
 import { UsersService, UserItem } from './users.service';
-import { BranchesService } from '../../core/branches.service';
+
+
 
 @Component({
   standalone: true,
   selector: 'app-users',
-  imports: [CommonModule, ReactiveFormsModule, MatTableModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatDialogModule, MatIconModule, MatSelectModule],
+  imports: [
+    CommonModule, ReactiveFormsModule,
+    MatTableModule, MatFormFieldModule, MatInputModule, MatButtonModule,
+    MatIconModule, MatDialogModule, MatChipsModule, MatProgressSpinnerModule
+  ],
   template: `
   <section class="space-y-4">
-    <header class="flex items-center justify-between gap-3">
-      <h1 class="text-2xl font-bold">Usuarios</h1>
-      <div class="flex items-center gap-3">
-        <mat-form-field appearance="outline" class="w-72">
-          <mat-label>Buscar</mat-label>
-          <input matInput [formControl]="q">
-          <button mat-icon-button matSuffix *ngIf="q.value" (click)="q.setValue('')"><mat-icon>close</mat-icon></button>
+    <header class="flex flex-col gap-3">
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-bold">Usuarios</h1>
+        <span class="text-sm text-gray-500" *ngIf="rows().length">{{ rows().length }} resultados</span>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <mat-form-field class="w-72" appearance="outline">
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput [formControl]="q" placeholder="Buscar por correo o nombre" />
         </mat-form-field>
-        <button mat-flat-button color="primary" (click)="openCreate()">Nuevo</button>
+
+        <button mat-flat-button type="button" class="btn-primary" (click)="openCreate()">
+          <mat-icon>add</mat-icon>
+          <span class="ml-1">Nuevo</span>
+        </button>
       </div>
     </header>
 
-    <table mat-table [dataSource]="rows()">
+    <div class="card p-4">
+      <div class="flex items-center gap-2 mb-3" *ngIf="loading()">
+        <mat-spinner diameter="22"></mat-spinner>
+        <span class="text-sm text-gray-600">Cargando…</span>
+      </div>
 
-      <ng-container matColumnDef="email">
-        <th mat-header-cell *matHeaderCellDef>Email</th>
-        <td mat-cell *matCellDef="let r">{{ r.email }}</td>
-      </ng-container>
+      <table mat-table [dataSource]="rows()" class="w-full">
+        <!-- Email -->
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef class="th">Email</th>
+          <td mat-cell *matCellDef="let r" class="td font-mono">{{ r.email }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef>Nombre</th>
-        <td mat-cell *matCellDef="let r">{{ r.fullName }}</td>
-      </ng-container>
+        <!-- Nombre -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef class="th">Nombre</th>
+          <td mat-cell *matCellDef="let r" class="td">{{ r.fullName }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="sucursal">
-        <th mat-header-cell *matHeaderCellDef>Sucursal</th>
-        <td mat-cell *matCellDef="let r">{{ r.sucursalNombre }}</td>
-      </ng-container>
+        <!-- Sucursal -->
+        <ng-container matColumnDef="sucursal">
+          <th mat-header-cell *matHeaderCellDef class="th">Sucursal</th>
+          <td mat-cell *matCellDef="let r" class="td">{{ r.sucursalNombre || r.sucursalId }}</td>
+        </ng-container>
 
-      <ng-container matColumnDef="roles">
-        <th mat-header-cell *matHeaderCellDef>Roles</th>
-        <td mat-cell *matCellDef="let r">{{ r.roles.join(', ') }}</td>
-      </ng-container>
+        <!-- Roles -->
+        <ng-container matColumnDef="roles">
+          <th mat-header-cell *matHeaderCellDef class="th">Roles</th>
+          <td mat-cell *matCellDef="let r" class="td">
+            <mat-chip-set *ngIf="r.roles?.length; else noroles">
+              <mat-chip *ngFor="let role of r.roles">{{ role }}</mat-chip>
+            </mat-chip-set>
+            <ng-template #noroles><span class="text-gray-400">—</span></ng-template>
+          </td>
+        </ng-container>
 
-      <ng-container matColumnDef="acciones">
-        <th mat-header-cell *matHeaderCellDef></th>
-        <td mat-cell *matCellDef="let r">
-          <button mat-icon-button (click)="openEdit(r)" title="Editar"><mat-icon>edit</mat-icon></button>
-          <button mat-icon-button (click)="resetPassword(r)" title="Reset password"><mat-icon>key</mat-icon></button>
-          <button mat-icon-button (click)="toggleLock(r)" [title]="r.lockedOut ? 'Desbloquear' : 'Bloquear'">
-            <mat-icon>{{ r.lockedOut ? 'lock_open' : 'lock' }}</mat-icon>
-          </button>
-        </td>
-      </ng-container>
+        <!-- Acciones -->
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef class="th center"></th>
+          <td mat-cell *matCellDef="let r" class="td center">
+            <button mat-icon-button (click)="openEdit(r)" matTooltip="Editar">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </td>
+        </ng-container>
 
-      <tr mat-header-row *matHeaderRowDef="displayed"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayed;"></tr>
-    </table>
-
-    <div *ngIf="rows().length===0" class="text-center text-gray-500 py-8">Sin usuarios.</div>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    </div>
   </section>
-  `
+  `,
+  styles: [`
+    .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; }
+    .th { text-align: left; font-weight: 600; font-size: 12px; color: #64748b; padding: 10px 12px; border-bottom: 1px solid #e5e7eb; }
+    .td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+    .center { text-align: center; }
+    .btn-primary { background: #06b6d4; color: white; }
+    .btn-primary:hover { background: #0891b2; }
+    .dark .card { background: #111827; border-color: #374151; }
+    .dark .th { color: #e5e7eb; border-bottom-color: #374151; }
+    .dark .td { color: #e5e7eb; border-bottom-color: #374151; }
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class UsersPage {
   private svc = inject(UsersService);
   private dialog = inject(MatDialog);
 
-  q = inject(FormBuilder).control<string>('', { nonNullable: true });
-  rows = signal<UserItem[]>([]);
-  displayed = ['email','name','sucursal','roles','acciones'];
+  q = new FormControl('', { nonNullable: true });
+  loading = signal(false);
+  data = signal<UserItem[]>([]);
+
+  displayedColumns = ['email','name','sucursal','roles','acciones'] as const;
+  rows = computed(() => this.data());
 
   constructor() {
-    this.q.valueChanges.subscribe(() => this.load());
-    this.load();
+    this.q.valueChanges.pipe(
+      startWith(''),
+      debounceTime(250),
+      distinctUntilChanged(),
+      tap(() => this.loading.set(true)),
+      switchMap(txt => {
+        const t = (txt ?? '').trim();
+        const search = (this.svc as any).search;
+        return typeof search === 'function' ? search(t) : this.svc.list();
+      }),
+      takeUntilDestroyed()
+    ).subscribe({
+      next: res => { this.data.set(Array.isArray(res) ? res : []); this.loading.set(false); },
+      error: (_: any) => { this.data.set([]); this.loading.set(false); },
+    });
   }
 
-  load() {
-    this.svc.list(this.q.value).subscribe(res => this.rows.set(res.items));
+  async openCreate() {
+    const { UserDialogComponent } = await import('./user-dialog.component');
+    //import { UserDialogComponent } from './user-dialog.component';
+    this.dialog.open(UserDialogComponent, { data: null, width: '640px' })
+      .afterClosed().subscribe(ok => { if (ok) this.refresh(); });
   }
 
-  openCreate() {
-    this.dialog.open(UserDialog, { data: null }).afterClosed().subscribe(ok => ok && this.load());
-  }
-  openEdit(u: UserItem) {
-    this.dialog.open(UserDialog, { data: u }).afterClosed().subscribe(ok => ok && this.load());
-  }
-  resetPassword(u: UserItem) {
-    const pass = prompt('Nueva contraseña para ' + u.email);
-    if (!pass) return;
-    this.svc.resetPassword(u.id, pass).subscribe(() => alert('Contraseña actualizada'));
-  }
-  toggleLock(u: UserItem) {
-    this.svc.setLock(u.id, !u.lockedOut).subscribe(() => this.load());
-  }
-}
-
-@Component({
-  standalone: true,
-  selector: 'app-user-dialog',
-  imports: [CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatButtonModule],
-  template: `
-  <h2 mat-dialog-title>{{ data ? 'Editar usuario' : 'Nuevo usuario' }}</h2>
-  <form class="p-4 space-y-4" [formGroup]="form" (ngSubmit)="save()">
-    <div class="grid md:grid-cols-2 gap-4">
-      <mat-form-field appearance="outline">
-        <mat-label>Email</mat-label>
-        <input matInput formControlName="email" [readonly]="!!data" required>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Nombre</mat-label>
-        <input matInput formControlName="fullName" required>
-      </mat-form-field>
-    </div>
-
-    <div class="grid md:grid-cols-2 gap-4">
-      <mat-form-field appearance="outline">
-        <mat-label>Sucursal</mat-label>
-        <mat-select formControlName="sucursalId" required>
-          <mat-option *ngFor="let s of sucursales" [value]="s.id">{{ s.nombre }}</mat-option>
-        </mat-select>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" *ngIf="!data">
-        <mat-label>Contraseña</mat-label>
-        <input matInput type="password" formControlName="password" required>
-      </mat-form-field>
-    </div>
-
-    <mat-form-field appearance="outline" class="w-full">
-      <mat-label>Roles</mat-label>
-      <mat-select formControlName="roles" multiple required>
-        <mat-option *ngFor="let r of roles" [value]="r">{{ r }}</mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <div class="flex justify-end gap-2">
-      <button mat-button type="button" (click)="close()">Cancelar</button>
-      <button mat-flat-button color="primary" [disabled]="form.invalid">Guardar</button>
-    </div>
-  </form>
-  `
-})
-export class UserDialog {
-  private ref = inject(MatDialogRef<UserDialog>);
-  private users = inject(UsersService);
-  private branches = inject(BranchesService);
-  roles: string[] = [];
-  sucursales: { id: string; nombre: string }[] = [];
-
-  form = inject(FormBuilder).group({
-    email: ['', [Validators.required, Validators.email]],
-    fullName: ['', Validators.required],
-    sucursalId: ['', Validators.required],
-    password: [''],
-    roles: [[], Validators.required] as [string[], any]
-  });
-
-  constructor(@Inject(MAT_DIALOG_DATA) public data: UserItem | null) {
-    this.users.roles().subscribe(r => this.roles = r);
-    this.branches.list().subscribe(s => this.sucursales = s);
-
-    if (data) {
-      this.form.patchValue({
-        email: data.email,
-        fullName: data.fullName,
-        sucursalId: data.sucursalId,
-        roles: data.roles
-      });
-      this.form.controls.password.clearValidators();
-      this.form.controls.email.disable();
-    } else {
-      this.form.controls.password.addValidators([Validators.required, Validators.minLength(6)]);
-    }
+  async openEdit(r: UserItem) {
+    const { UserDialogComponent } = await import('./user-dialog.component');
+    this.dialog.open(UserDialogComponent, { data: r, width: '640px' })
+      .afterClosed().subscribe(ok => { if (ok) this.refresh(); });
   }
 
-  close(){ this.ref.close(false); }
-  save(){
-    if (this.form.invalid) return;
-    const v = this.form.getRawValue();
-    if (!this.data) {
-      this.users.create({ email: v.email!, fullName: v.fullName!, sucursalId: v.sucursalId!, password: v.password!, roles: v.roles! })
-        .subscribe({ next: _ => this.ref.close(true) });
-    } else {
-      this.users.update(this.data.id, { fullName: v.fullName!, sucursalId: v.sucursalId!, roles: v.roles! })
-        .subscribe({ next: _ => this.ref.close(true) });
-    }
+  private refresh() {
+    const t = (this.q.value ?? '').trim();
+    const search = (this.svc as any).search;
+    const source$ = typeof search === 'function' ? search(t) : this.svc.list();
+    this.loading.set(true);
+    source$.subscribe({
+      next: (res: UserItem[] | null | undefined) => { this.data.set(res ?? []); this.loading.set(false); },
+      error: (_: any) => { this.data.set([]); this.loading.set(false); },
+    });
   }
 }

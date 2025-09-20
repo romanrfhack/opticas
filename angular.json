@@ -28,8 +28,23 @@
               "src/styles.css"
             ]
           },
-          "configurations": {
-            "production": {
+          "configurations": {          
+              "production-with-source-maps": {                            
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": true,
+              "namedChunks": false,
+              "aot": true,
+              "extractLicenses": true,              
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                }
+              ]
+            },
+            "production": {              
               "budgets": [
                 {
                   "type": "initial",
@@ -48,7 +63,7 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
-            }
+            }            
           },
           "defaultConfiguration": "production"
         },

@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { ShellComponent } from './components/shell/shell.component';
 import { roleGuard } from './auth/role.guard';
 import { authGuard } from './auth/auth.guard';
-import { HistoriaFormComponent } from './clinica/historia-form.component';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./auth/login.page').then(m => m.LoginPage) },       

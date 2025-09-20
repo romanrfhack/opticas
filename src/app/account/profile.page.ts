@@ -1,10 +1,11 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../auth/auth.service';
 
 function matchPassword(group: AbstractControl): ValidationErrors | null {
@@ -16,144 +17,104 @@ function matchPassword(group: AbstractControl): ValidationErrors | null {
 @Component({
   standalone: true,
   selector: 'app-profile',
-  imports: [CommonModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  imports: [
+    CommonModule, ReactiveFormsModule,
+    MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule
+  ],
   template: `
-  <div class="min-h-screen bg-gray-50 p-6">
-    <div class="max-w-5xl mx-auto">
-      <!-- Header -->
-      <div class="flex items-center mb-6">
-        <button class="flex items-center justify-center w-10 h-10 rounded-full bg-cyan-50 text-cyan-600 mr-3 hover:bg-cyan-600 hover:text-white transition-colors duration-200" (click)="goBack()">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <h1 class="text-2xl font-semibold text-gray-900">Mi Perfil</h1>
-      </div>
+  <section class="max-w-4xl mx-auto space-y-6">
+    <header class="flex items-center gap-3">
+      <button mat-icon-button type="button" (click)="goBack()" aria-label="Regresar">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1 class="text-2xl font-bold">Perfil</h1>
+    </header>
 
-      <div class="grid gap-6 md:grid-cols-2">
-        <!-- Tarjeta de Perfil -->
-        <mat-card class="p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100">
-          <h2 class="text-lg font-semibold mb-5 flex items-center text-gray-900">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            Mi perfil
-          </h2>
-          
-          <form [formGroup]="profileForm" class="space-y-5" (ngSubmit)="saveProfile()">
-            <mat-form-field appearance="outline" class="w-full">
-              <mat-label class="text-gray-600">Email</mat-label>
-              <input matInput [value]="auth.user()?.email" readonly class="text-gray-500">
-              <mat-icon matSuffix class="text-gray-400">email</mat-icon>
-            </mat-form-field>
+    <!-- Perfil -->
+    <mat-card class="p-4">
+      <h2 class="text-lg font-semibold mb-4">Datos de usuario</h2>
 
-            <mat-form-field appearance="outline" class="w-full">
-              <mat-label class="text-gray-600">Nombre</mat-label>
-              <input matInput formControlName="fullName" required class="placeholder-gray-400">
-              <span matSuffix class="text-red-500">*</span>
-            </mat-form-field>
+      <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="grid gap-4 md:grid-cols-2">
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Nombre</mat-label>
+          <input matInput formControlName="name" required />
+          <mat-error *ngIf="profileForm.controls.name.hasError('required')">Requerido</mat-error>
+        </mat-form-field>
 
-            <mat-form-field appearance="outline" class="w-full">
-              <mat-label class="text-gray-600">Teléfono</mat-label>
-              <input matInput formControlName="phoneNumber" class="placeholder-gray-400">
-              <mat-icon matSuffix class="text-gray-400">phone</mat-icon>
-            </mat-form-field>
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" type="email" required />
+          <mat-error *ngIf="profileForm.controls.email.hasError('required')">Requerido</mat-error>
+          <mat-error *ngIf="profileForm.controls.email.hasError('email')">Formato inválido</mat-error>
+        </mat-form-field>
 
-            <div class="flex justify-end gap-3 pt-2">
-              <button mat-button type="button" 
-                class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                (click)="resetProfile()">
-                Restaurar
-              </button>
-              <button mat-flat-button color="primary" 
-                class="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                [disabled]="profileForm.invalid || savingProfile()">
-                Guardar
-              </button>
-            </div>
-            
-            <div class="text-sm text-green-600 bg-green-50 p-3 rounded-lg border border-green-200" *ngIf="profileOk()">
-              Perfil actualizado.
-            </div>
-            <div class="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200" *ngIf="profileErr()">
-              {{ profileErr() }}
-            </div>
-          </form>
-        </mat-card>
+        <mat-form-field appearance="outline" class="w-full md:col-span-2">
+          <mat-label>Teléfono</mat-label>
+          <input matInput formControlName="phoneNumber" />
+          <mat-icon matSuffix>phone</mat-icon>
+        </mat-form-field>
 
-        <!-- Tarjeta de Cambio de Contraseña -->
-        <mat-card class="p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100">
-          <h2 class="text-lg font-semibold mb-5 flex items-center text-gray-900">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            Cambiar contraseña
-          </h2>
-          
-          <form [formGroup]="passForm" class="space-y-5" (ngSubmit)="changePass()">
-            <mat-form-field appearance="outline" class="w-full">
-              <mat-label class="text-gray-600">Contraseña actual</mat-label>
-              <input matInput type="password" formControlName="currentPassword" required class="placeholder-gray-400">
-              <span matSuffix class="text-red-500">*</span>
-            </mat-form-field>
+        <div class="md:col-span-2 flex justify-end gap-3">
+          <button mat-button type="button" (click)="resetProfile()">Restaurar</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="profileForm.invalid || savingProfile()">
+            {{ savingProfile() ? 'Guardando…' : 'Guardar cambios' }}
+          </button>
+        </div>
 
-            <div class="grid md:grid-cols-2 gap-4">
-              <mat-form-field appearance="outline">
-                <mat-label class="text-gray-600">Nueva contraseña</mat-label>
-                <input matInput type="password" formControlName="newPassword" required class="placeholder-gray-400">
-                <span matSuffix class="text-red-500">*</span>
-              </mat-form-field>
-              
-              <mat-form-field appearance="outline">
-                <mat-label class="text-gray-600">Confirmar</mat-label>
-                <input matInput type="password" formControlName="confirm" required class="placeholder-gray-400">
-                <span matSuffix class="text-red-500">*</span>
-              </mat-form-field>
-            </div>
+        <div class="md:col-span-2 text-sm" *ngIf="profileOk() || profileErr()">
+          <span class="text-green-600" *ngIf="profileOk()">Perfil actualizado</span>
+          <span class="text-red-600" *ngIf="profileErr()">{{ profileErr() }}</span>
+        </div>
+      </form>
+    </mat-card>
 
-            <div class="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200" *ngIf="passForm.hasError('mismatch')">
-              Las contraseñas no coinciden
-            </div>
+    <!-- Password -->
+    <mat-card class="p-4">
+      <h2 class="text-lg font-semibold mb-4">Cambiar contraseña</h2>
 
-            <div class="flex justify-end gap-3 pt-2">
-              <button mat-button type="button" 
-                class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                (click)="passForm.reset()">
-                Limpiar
-              </button>
-              <button mat-flat-button color="primary" 
-                class="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 transition-colors duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                [disabled]="passForm.invalid || savingPass()">
-                Actualizar
-              </button>
-            </div>
-            
-            <div class="text-sm text-green-600 bg-green-50 p-3 rounded-lg border border-green-200" *ngIf="passOk()">
-              Contraseña actualizada.
-            </div>
-            <div class="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200" *ngIf="passErr()">
-              {{ passErr() }}
-            </div>
-          </form>
-        </mat-card>
-      </div>
-    </div>
-  </div>
-  `
+      <form [formGroup]="passForm" (ngSubmit)="changePass()" class="grid gap-4 md:grid-cols-2">
+        <mat-form-field appearance="outline" class="w-full md:col-span-2">
+          <mat-label>Contraseña actual</mat-label>
+          <input matInput type="password" formControlName="currentPassword" required />
+          <mat-error *ngIf="passForm.controls.currentPassword.hasError('required')">Requerida</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Nueva contraseña</mat-label>
+          <input matInput type="password" formControlName="newPassword" required minlength="6" />
+          <mat-error *ngIf="passForm.controls.newPassword.hasError('required')">Requerida</mat-error>
+          <mat-error *ngIf="passForm.controls.newPassword.hasError('minlength')">Mínimo 6 caracteres</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Confirmar nueva contraseña</mat-label>
+          <input matInput type="password" formControlName="confirm" required />
+          <mat-error *ngIf="passForm.hasError('mismatch')">No coincide</mat-error>
+        </mat-form-field>
+
+        <div class="md:col-span-2 flex justify-end gap-3">
+          <button mat-flat-button color="primary" type="submit" [disabled]="passForm.invalid || savingPass()">
+            {{ savingPass() ? 'Actualizando…' : 'Actualizar contraseña' }}
+          </button>
+        </div>
+
+        <div class="md:col-span-2 text-sm" *ngIf="passOk() || passErr()">
+          <span class="text-green-600" *ngIf="passOk()">Contraseña actualizada</span>
+          <span class="text-red-600" *ngIf="passErr()">{{ passErr() }}</span>
+        </div>
+      </form>
+    </mat-card>
+  </section>
+  `,
+  styles: [`
+    :host { display:block; }
+    mat-card { border-radius: 12px; }
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProfilePage {
-  auth = inject(AuthService);
-  fb = inject(FormBuilder);
-
-  profileForm = this.fb.group({
-    fullName: [this.auth.user()?.name ?? '', [Validators.required]],
-    phoneNumber: ['']
-  });
-  passForm = this.fb.group({
-    currentPassword: ['', Validators.required],
-    newPassword: ['', [Validators.required, Validators.minLength(6)]],
-    confirm: ['', Validators.required]
-  }, { validators: matchPassword });
+  private auth = inject(AuthService);
+  private fb = inject(FormBuilder);
 
   savingProfile = signal(false);
   profileOk = signal(false);
@@ -163,32 +124,78 @@ export class ProfilePage {
   passOk = signal(false);
   passErr = signal<string | null>(null);
 
-  resetProfile(){
-    this.profileForm.patchValue({ fullName: this.auth.user()?.name ?? '', phoneNumber: '' });
+  profileForm = this.fb.group({
+    name: ['', Validators.required],
+    email: ['', [Validators.required, Validators.email]],
+    phoneNumber: ['']
+  });
+
+  passForm = this.fb.group({
+    currentPassword: ['', Validators.required],
+    newPassword: ['', [Validators.required, Validators.minLength(6)]],
+    confirm: ['', Validators.required],
+  }, { validators: matchPassword });
+
+  constructor() {
+    // Inicializa con datos del usuario actual si los tienes en AuthService
+    const u = this.auth.user?.() ?? null;
+    if (u) {
+      this.profileForm.patchValue({
+        name: u.name ?? '',
+        email: u.email ?? '',
+        phoneNumber: ''
+      });
+    }
   }
 
-  saveProfile(){
+  resetProfile() {
+    const u = this.auth.user?.() ?? null;
+    if (u) {
+      this.profileForm.reset({
+        name: u.name ?? '',
+        email: u.email ?? '',
+        phoneNumber: ''
+      });
+      this.profileOk.set(false);
+      this.profileErr.set(null);
+    }
+  }
+
+  saveProfile() {
     if (this.profileForm.invalid) return;
     this.savingProfile.set(true); this.profileOk.set(false); this.profileErr.set(null);
-    const v = this.profileForm.value as any;
-    this.auth.updateProfile({ fullName: v.fullName!, phoneNumber: v.phoneNumber || undefined }).subscribe({
-      next: _ => { this.savingProfile.set(false); this.profileOk.set(true); this.auth.syncUserName(v.fullName!); },
-      error: (e) => { this.savingProfile.set(false); this.profileErr.set(e?.error?.message || 'Error al actualizar'); }
+    const v = this.profileForm.getRawValue();
+
+    // Ajusta el método según tu AuthService: updateProfile o updateUser
+    const req = (this.auth as any).updateProfile?.(v) || (this.auth as any).updateUser?.(v);
+
+    if (!req || typeof req.subscribe !== 'function') {
+      this.savingProfile.set(false);
+      this.profileErr.set('No se encontró el método de actualización en AuthService.');
+      return;
+    }
+
+    req.subscribe({
+      next: () => { this.savingProfile.set(false); this.profileOk.set(true); },
+      error: (e: any) => { this.savingProfile.set(false); this.profileErr.set(e?.error?.message || 'No se pudo actualizar'); }
     });
   }
 
-  changePass(){
+  changePass() {
     if (this.passForm.invalid) return;
     this.savingPass.set(true); this.passOk.set(false); this.passErr.set(null);
-    const v = this.passForm.value as any;
-    this.auth.changePassword({ currentPassword: v.currentPassword!, newPassword: v.newPassword! }).subscribe({
-      next: _ => { this.savingPass.set(false); this.passOk.set(true); this.passForm.reset(); },
-      error: (e) => { this.savingPass.set(false); this.passErr.set(e?.error?.message || 'No se pudo actualizar'); }
-    });
+    const v = this.passForm.getRawValue();
+    if (!(this.auth as any).changePassword) {
+      this.savingPass.set(false);
+      this.passErr.set('No se encontró changePassword en AuthService.');
+      return;
+    }
+    (this.auth as any).changePassword({ currentPassword: v.currentPassword!, newPassword: v.newPassword! })
+      .subscribe({
+        next: () => { this.savingPass.set(false); this.passOk.set(true); this.passForm.reset(); },
+        error: (e: any) => { this.savingPass.set(false); this.passErr.set(e?.error?.message || 'No se pudo actualizar'); }
+      });
   }
 
-  goBack() {
-    // Implementar lógica para retroceder
-    window.history.back();
-  }
+  goBack() { history.back(); }
 }

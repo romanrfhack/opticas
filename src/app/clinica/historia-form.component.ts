@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,7 +15,6 @@ import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { AgudezaDto, CrearHistoriaRequest, LcDto, MaterialDto, MaterialItem, PacienteItem } from '../core/models/clinica.models';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { EnviarLabDialog } from './enviar-lab.dialog';
 import { UltimasVisitasComponent } from './ultimas-visitas.component';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -188,14 +188,19 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     <!-- Col 3: últimas visitas -->
     <div class="space-y-6">
       <section class="p-4 bg-white rounded-2xl shadow">
-        <app-ultimas-visitas [pacienteId]="pacienteId()"></app-ultimas-visitas>
+        @defer (when pacienteId()) {
+          <app-ultimas-visitas [pacienteId]="pacienteId()"></app-ultimas-visitas>
+        } @placeholder {
+          <div class="text-sm text-gray-500">Selecciona un cliente para ver visitas.</div>
+        }
       </section>
     </div>
   </div>
   `,
   styles: [`
     .input { width: 6rem; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.25rem 0.5rem; }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HistoriaFormComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -246,17 +251,16 @@ export class HistoriaFormComponent implements OnInit {
 
   ngOnInit() {
     // Autocomplete de pacientes
-    this.pacForm.controls.nombre.valueChanges.pipe(
-      debounceTime(250),
+    this.pacForm.controls.nombre.valueChanges.pipe(debounceTime(250),
       distinctUntilChanged(),
       switchMap(v => {
         if (!v || (this.pacienteId() && v === this.pacForm.value.nombre)) return of([]);
         return this.pacApi.search(v);
       })
-    ).subscribe(list => this.sugeridos.set(list));
+    , takeUntilDestroyed()).subscribe(list => this.sugeridos.set(list));
 
     // Cargar catálogo de materiales
-    this.matApi.list().subscribe({
+    this.matApi.list().pipe(takeUntilDestroyed()).subscribe({
       next: (list) => this.materiales.set(list || []),
       error: () => this.materiales.set([])
     });
@@ -355,8 +359,9 @@ export class HistoriaFormComponent implements OnInit {
     });
   }
 
-  abrirEnviarLab() {
+  async abrirEnviarLab() {
     if (!this.historiaId()) return;
+    const { EnviarLabDialog } = await import('./enviar-lab.dialog');
     const ref = this.dialog.open(EnviarLabDialog, { width: '720px' });
     ref.afterClosed().subscribe(data => {
       if (!data) return;

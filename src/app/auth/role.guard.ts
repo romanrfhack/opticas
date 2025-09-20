@@ -7,8 +7,6 @@ export const roleGuard = (roles: string[]): CanMatchFn => {
     const auth = inject(AuthService);
     const router = inject(Router);
     const user = auth.user();
-    if (user && user.roles?.some(r => roles.includes(r))) return true;
-    router.navigate(['/']);
-    return false;
+    return (user && user.roles?.some(r => roles.includes(r))) ? true : router.parseUrl('/');
   };
 };

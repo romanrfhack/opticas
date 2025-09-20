@@ -1,7 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, inject, signal  } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, switchMap, tap, startWith } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -15,8 +16,6 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import { InventoryService, InventorySearchItem } from './inventory.service';
 import { ProductsService } from './products.service';
-import { ProductDialogComponent } from './product-dialog.component';
-import { MovementDialogComponent } from './movement-dialog.component';
 import { Toast } from '../../shared/ui/toast.service';
 
 @Component({
@@ -230,7 +229,8 @@ export class InventarioPage {
       distinctUntilChanged(),
       tap(() => this.loading.set(true)),
       switchMap(txt => this.svc.search(txt ?? ''))
-    ).subscribe({
+    ,
+      takeUntilDestroyed()).subscribe({
       next: res => { this.data.set(res); this.loading.set(false); },
       error: _ => { this.data.set([]); this.loading.set(false); }
     });
@@ -238,7 +238,8 @@ export class InventarioPage {
 
   rows = computed(() => this.data());
 
-  nuevoProducto() {
+  async nuevoProducto() {
+    const { ProductDialogComponent } = await import('./product-dialog.component');
     this.dialog.open(ProductDialogComponent, { data: { mode: 'create' } })
       .afterClosed().subscribe(created => {
         if (created) {
@@ -248,11 +249,12 @@ export class InventarioPage {
       });
   }
 
-  editarProducto(r: InventorySearchItem) {
+  async editarProducto(r: InventorySearchItem) {
     this.products.list(r.sku).subscribe({
-      next: list => {
+      next: async list => {
         const p = list.find(x => x.id === r.productId);
         if (!p) return;
+        const { ProductDialogComponent } = await import('./product-dialog.component');
         this.dialog.open(ProductDialogComponent, { data: { mode: 'edit', product: p } })
           .afterClosed().subscribe(updated => {
             if (updated) {
@@ -264,7 +266,8 @@ export class InventarioPage {
     });
   }
 
-  openMovimiento(r: InventorySearchItem, tipo: 'Entrada'|'Salida'|'Traslado') {
+  async openMovimiento(r: InventorySearchItem, tipo: 'Entrada'|'Salida'|'Traslado') {
+    const { MovementDialogComponent } = await import('./movement-dialog.component');
     const ref = this.dialog.open(MovementDialogComponent, {
       data: {
         productoId: r.productId,
