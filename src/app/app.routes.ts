@@ -4,7 +4,7 @@ import { roleGuard } from './auth/role.guard';
 import { authGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
-  { path: 'login', loadComponent: () => import('./auth/login.page').then(m => m.LoginPage) },       
+  { path: 'login', loadComponent: () => import('./auth/login.page').then(m => m.LoginPage) },
   {
     path: '',    
     component: ShellComponent,
