@@ -22,15 +22,14 @@ jobs:
 
       - name: Install deps
         run: npm ci
-        working-directory: ./          # ← donde está angular.json
+        working-directory: ./   # carpeta donde está angular.json
 
       - name: Build (prod)
         run: npm run build -- --configuration=production
         working-directory: ./
 
-      # (Opcional) copia tu config de SWA al build
-      - name: Copy SWA config
-        run: cp staticwebapp.config.json dist/Opticas/ || true
+      - name: Copy SWA config to output
+        run: cp staticwebapp.config.json dist/Opticas/browser/ || true
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
@@ -39,8 +38,4 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
           skip_app_build: true
-          # 👇 Importante: sube directamente la carpeta de build
-          app_location: "dist/Opticas"
-          # (estos ya no son necesarios cuando action=upload)
-          # output_location: ""
-          # app_artifact_location: ""
+          app_location: "dist/Opticas/browser"   # <-- aquí sí está index.html
