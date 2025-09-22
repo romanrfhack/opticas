@@ -28,9 +28,6 @@ jobs:
         run: npm run build -- --configuration=production
         working-directory: ./
 
-      - name: Copy SWA config to output
-        run: cp staticwebapp.config.json dist/Opticas/browser/ || true
-
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
