@@ -179,6 +179,13 @@ import { SucursalSwitcherComponent } from "../../shared/sucursal-switcher-compon
   `,
   styles: [`
     .main-content { min-height: calc(100dvh - 64px); }
+    .main-content{
+  min-height: 100dvh;
+  flex: 1 1 auto;     /* ocupa todo el espacio disponible */
+  overflow: auto;
+  padding: 16px 24px;
+  background: url('/assets/img/fondo.webp') center / cover no-repeat fixed;
+}
     .content-container { max-width: 1120px; margin: 0 auto; padding: 16px; }
     .help-button { display: flex; align-items: center; gap: 6px; }
 
