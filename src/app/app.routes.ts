@@ -6,7 +6,6 @@ import { authGuard } from './auth/auth.guard';
 export const routes: Routes = [
   // 1) al entrar a '/', manda a /login
   { path: '', pathMatch: 'full', redirectTo: 'login' },
-
   // 2) login fuera del shell
   { path: 'login', loadComponent: () => import('./auth/login.page').then(m => m.LoginPage) },
 
@@ -17,16 +16,12 @@ export const routes: Routes = [
     children: [
       // dentro del shell, si navegan a '', manda a dashboard
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-
       { path: 'admin/usuarios', canMatch: [roleGuard(['Admin'])],
         loadComponent: () => import('./admin/users/users.page').then(m => m.UsersPage) },
-
       { path: 'perfil', canActivate: [authGuard],
         loadComponent: () => import('./account/profile.page').then(m => m.ProfilePage) },
-
       { path: 'dashboard', canActivate: [authGuard],
         loadComponent: () => import('./features/dashboard/dashboard.page').then(m => m.DashboardPage) },
-
       { path: 'inventario', canActivate: [authGuard],
         loadComponent: () => import('./features/inventario/inventario.page').then(m => m.InventarioPage) },
       { path: 'clientes', canActivate: [authGuard],
@@ -39,7 +34,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/historias/historias.page').then(m => m.HistoriasPage) },
       { path: 'ordenes', canActivate: [authGuard],
         loadComponent: () => import('./features/ordenes/ordenes.page').then(m => m.OrdenesPage) },
-
       { path: '**', loadComponent: () => import('./features/not-found/not-found.page').then(m => m.NotFoundPage) },
     ]
   }
