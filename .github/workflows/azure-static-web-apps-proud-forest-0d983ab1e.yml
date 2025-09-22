@@ -15,7 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Angular 20.x requiere Node >= 20.19 (o 22.x)
       - name: Use Node 22
         uses: actions/setup-node@v4
         with:
@@ -29,17 +28,11 @@ jobs:
         run: npm run build -- --configuration=production
         working-directory: ./
 
-      # Copiamos el fallback SPA a la carpeta que sí contiene index.html
-      - name: Copy SWA config to output
-        run: cp staticwebapp.config.json dist/Opticas/browser/ || true
-
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           action: upload
           skip_app_build: true
-          # ¡Muy importante! aquí está el index.html
-          app_location: "dist/Opticas/browser"
-          # opcional; asegura dónde buscar la config:
-          config_file_location: "dist/Opticas/browser"
+          app_location: "dist/Opticas/browser"   # aquí está index.html
+          config_file_location: "."               # <-- TOMARÁ staticwebapp.config.json desde la raíz
