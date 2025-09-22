@@ -35,4 +35,4 @@ jobs:
           action: upload
           skip_app_build: true
           app_location: "dist/Opticas/browser"   # aquí está index.html
-          config_file_location: "."               # <-- TOMARÁ staticwebapp.config.json desde la raíz
+          config_file_location: "."               # ← toma staticwebapp.config.json desde la raíz
