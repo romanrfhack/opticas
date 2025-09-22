@@ -22,7 +22,7 @@ jobs:
 
       - name: Install deps
         run: npm ci
-        working-directory: ./        # <- carpeta donde está angular.json (./ si es raíz)
+        working-directory: ./          # <-- carpeta donde está tu angular.json
 
       - name: Build (prod)
         run: npm run build -- --configuration=production
@@ -32,6 +32,9 @@ jobs:
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          app_location: "./"              # <- misma carpeta de angular.json
-          output_location: "dist/Opticas" # <- tu carpeta de salida real
-          skip_app_build: true            # <- evita que Oryx (Node 18) vuelva a construir
+          repo_token: ${{ secrets.GITHUB_TOKEN }}     # opcional, útil para PRs
+          action: upload                              # <-- clave para evitar tu error
+          skip_app_build: true                        # ya construimos arriba
+          app_location: "./"                          # donde está angular.json
+          output_location: "dist/Opticas"             # salida del build (por compat)
+          app_artifact_location: "dist/Opticas"       # carpeta a subir cuando skip_app_build
