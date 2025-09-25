@@ -1,7 +1,9 @@
-import { Component, Input, OnChanges, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, effect, input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { of, Subscription } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+
 import { HistoriasService } from '../core/historias.service';
 import { UltimaHistoriaItem } from '../core/models/clinica.models';
 
@@ -22,25 +24,21 @@ export interface Visita {
 
     <table mat-table [dataSource]="rows()" class="mat-elevation-z1 w-full text-sm"
            *ngIf="rows().length; else empty">
-      <!-- Fecha -->
       <ng-container matColumnDef="fecha">
         <th mat-header-cell *matHeaderCellDef>Fecha</th>
         <td mat-cell *matCellDef="let r">{{ r.fecha | date:'short' }}</td>
       </ng-container>
 
-      <!-- Estado -->
       <ng-container matColumnDef="estado">
         <th mat-header-cell *matHeaderCellDef>Estado</th>
         <td mat-cell *matCellDef="let r">{{ r.estado }}</td>
       </ng-container>
 
-      <!-- Total -->
       <ng-container matColumnDef="total">
         <th mat-header-cell *matHeaderCellDef>Total</th>
         <td mat-cell *matCellDef="let r">{{ r.total | number:'1.2-2' }}</td>
       </ng-container>
 
-      <!-- Resta -->
       <ng-container matColumnDef="resta">
         <th mat-header-cell *matHeaderCellDef>Resta</th>
         <td mat-cell *matCellDef="let r">{{ r.resta | number:'1.2-2' }}</td>
@@ -56,20 +54,31 @@ export interface Visita {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class UltimasVisitasComponent implements OnChanges {
+export class UltimasVisitasComponent {
   private api = inject(HistoriasService);
 
-  @Input() pacienteId?: string | null;
+  // Input reactivo (Angular 16+)
+  pacienteId = input<string | null>(null);
 
   rows = signal<Visita[]>([]);
   cols = ['fecha', 'estado', 'total', 'resta'] as const;
 
-  ngOnChanges() {
-    if (!this.pacienteId) { this.rows.set([]); return; }
-    this.api.ultimas(this.pacienteId)
-      .pipe(takeUntilDestroyed())
-      .subscribe(
-        (items: UltimaHistoriaItem[] = []) => {
+  // Efecto que reacciona a cambios de pacienteId
+  private _loadEff = effect((onCleanup) => {
+    const id = this.pacienteId();
+    // console.log('UltimasVisitasComponent: pacienteId changed to', id);
+
+    // Limpia filas si no hay id
+    if (!id) {
+      this.rows.set([]);
+      return;
+    }
+
+    // Suscripción por cambio; limpiamos la anterior con onCleanup
+    const sub: Subscription = of(id)
+      .pipe(switchMap(pid => this.api.ultimas(pid) ?? of([])))
+      .subscribe({
+        next: (items: UltimaHistoriaItem[] = []) => {
           const visitas: Visita[] = (items ?? []).map(item => ({
             id: item.id,
             fecha: item.fecha,
@@ -79,9 +88,11 @@ export class UltimasVisitasComponent implements OnChanges {
           }));
           this.rows.set(visitas);
         },
-        () => this.rows.set([])
-      );
-  }
+        error: () => this.rows.set([]),
+      });
+
+    onCleanup(() => sub.unsubscribe());
+  });
 
   trackById = (_: number, v: Visita) => v.id;
 }

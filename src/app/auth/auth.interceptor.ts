@@ -7,17 +7,17 @@ import { environment } from '../../environments/environment';
 function getAccessToken(): string | null {
   try {
     const raw = localStorage.getItem('auth');
-    console.log("getAccessToken - raw: ", raw )
+    //console.log("getAccessToken - raw: ", raw )
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    console.log("getAccessToken - parsed: ", parsed)
+    //console.log("getAccessToken - parsed: ", parsed)
     return parsed?.accessToken ?? null; // <-- "access" coincide con tu API .NET
   } catch { return null; }
 }
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const token = getAccessToken();
-  console.log('authInterceptor - Token: ', token)
+  //console.log('authInterceptor - Token: ', token)
   if (!token) return next(req);
 
   // Resolver URL base del API
@@ -39,8 +39,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     shouldAttach = req.url.startsWith('/api');
   }
 
-  if (shouldAttach && !req.headers.has('Authorization')) {
-    console.log("Clone")
+  if (shouldAttach && !req.headers.has('Authorization')) {    
     req = req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
   }
   return next(req);

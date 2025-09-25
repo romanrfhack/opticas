@@ -18,6 +18,7 @@ export interface PacienteItem {
   edad: number;
   telefono: string;
   ocupacion: string;
+  direccion?: string | null;
 }
 
 export interface CrearPacienteRequest {
@@ -27,6 +28,19 @@ export interface CrearPacienteRequest {
   ocupacion: string;
   direccion?: string | null;
 }
+
+export type PacienteLite = { id: string; nombre: string; telefono?: string|null };
+
+export type PacienteGridItem = {
+  id: string; nombre: string; edad: number;
+  telefono?: string|null; ocupacion?: string|null;
+  ultimaVisitaFecha?: string|null; ultimaVisitaEstado?: string|null;
+  ultimaVisitaTotal?: number|null; ultimaVisitaACuenta: number; ultimaVisitaResta: number;
+  ultimoPagoFecha?: string|null; ultimoPagoMonto?: number|null;
+  tieneOrdenPendiente: boolean;
+};
+
+export type PagedResult<T> = { page: number; pageSize: number; total: number; items: T[]; };
 
 export interface AgudezaDto {
   condicion: CondicionAV;

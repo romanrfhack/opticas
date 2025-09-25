@@ -39,7 +39,7 @@ export class AuthService {
 
   isAuth() {
     const t = this._token();
-    console.log("isAuth - _token: ", t)
+    //console.log("isAuth - _token: ", t)
     if (!t) return false;
     return true; // opcional: valida exp si quieres
   }

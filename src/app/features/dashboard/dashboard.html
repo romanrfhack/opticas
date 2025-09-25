@@ -1,0 +1,214 @@
+<div class="dashboard-container">
+  <!-- Header con título y controles -->
+  <div class="dashboard-header">
+    <div class="header-title">
+      <h1>Dashboard</h1>
+      <p>Resumen general de actividades y métricas</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-export" (click)="exportReport()">
+        <span class="material-icons">download</span>
+        Exportar Reporte
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters-section">
+    <form [formGroup]="filterForm" (ngSubmit)="onFilterChange()" class="filters-form">
+      <div class="filter-group">
+        <label>Período:</label>
+        <select formControlName="period" (change)="onFilterChange()">
+          <option *ngFor="let period of periods" [value]="period.value">{{period.label}}</option>
+        </select>
+      </div>
+
+      <div class="filter-group" *ngIf="filterForm.get('period')?.value === 'custom'">
+        <label>Desde:</label>
+        <input type="date" formControlName="startDate" (change)="onFilterChange()">
+        
+        <label>Hasta:</label>
+        <input type="date" formControlName="endDate" (change)="onFilterChange()">
+      </div>
+
+      <div class="filter-group">
+        <label>Sucursal:</label>
+        <select formControlName="branchId" (change)="onFilterChange()">
+          <option *ngFor="let branch of branches" [value]="branch.id">{{branch.name}}</option>
+        </select>
+      </div>
+
+      <button type="button" class="btn-apply" (click)="onFilterChange()">
+        <span class="material-icons">refresh</span>
+        Actualizar
+      </button>
+    </form>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-section">
+    <div class="kpi-grid">
+      <div *ngFor="let kpi of kpis" class="kpi-card" [class]="'trend-' + kpi.trend">
+        <div class="kpi-icon">
+          <span class="material-icons">{{kpi.icon}}</span>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-value">{{kpi.value | number}}</div>
+          <div class="kpi-title">{{kpi.title}}</div>
+          <div class="kpi-change">
+            <span class="change-indicator" [class]="kpi.trend">
+              <span class="material-icons">
+                {{kpi.trend === 'up' ? 'arrow_upward' : kpi.trend === 'down' ? 'arrow_downward' : 'remove'}}
+              </span>
+              {{kpi.change}}%
+            </span>
+            vs período anterior
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráficas Grid -->
+  <div class="charts-section">
+    <div class="charts-grid">
+      
+      <!-- Gráfica 1: Pacientes atendidos -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Pacientes Atendidos</h3>
+          <span class="chart-subtitle">Nuevos vs Recurrentes</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="patientAttendanceChart"></canvas>
+          <!-- Simulación de chart.js -->
+          <div class="chart-simulation">
+            <div class="bar-chart-sim">
+              <div *ngFor="let day of patientAttendanceData.labels; let i = index" class="bar-group">
+                <div class="bar new" [style.height]="patientAttendanceData.datasets[0].data[i] * 2 + 'px'"></div>
+                <div class="bar recurrent" [style.height]="patientAttendanceData.datasets[1].data[i] * 2 + 'px'"></div>
+                <span class="bar-label">{{day}}</span>
+              </div>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-item"><div class="color new"></div> Nuevos</span>
+              <span class="legend-item"><div class="color recurrent"></div> Recurrentes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfica 2: Métodos de pago -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Métodos de Pago</h3>
+          <span class="chart-subtitle">Distribución por tipo</span>
+        </div>
+        <div class="chart-container">
+          <div class="pie-chart-sim">
+            <div class="pie" [style.background]="'conic-gradient(#FF6384 0% 45%, #36A2EB 45% 80%, #FFCE56 80% 100%)'"></div>
+            <div class="pie-legend">
+              <div *ngFor="let method of paymentMethodsData.labels; let i = index" class="legend-item">
+                <div class="color" [style.background]="paymentMethodsData.datasets[0].backgroundColor[i]"></div>
+                {{method}}: {{paymentMethodsData.datasets[0].data[i]}}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfica 3: Estados de órdenes -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Estados de Órdenes</h3>
+          <span class="chart-subtitle">Distribución actual</span>
+        </div>
+        <div class="chart-container">
+          <div class="doughnut-chart-sim">
+            <div class="doughnut" [style.background]="'conic-gradient(#FF9F40 0% 15%, #FF6384 15% 40%, #4BC0C0 40% 58%, #9966FF 58% 100%)'"></div>
+            <div class="chart-legend">
+              <div *ngFor="let status of orderStatusData.labels; let i = index" class="legend-item">
+                <div class="color" [style.background]="orderStatusData.datasets[0].backgroundColor[i]"></div>
+                {{status}}: {{orderStatusData.datasets[0].data[i]}}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfica 4: Ventas por categoría -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Ventas por Categoría</h3>
+          <span class="chart-subtitle">Este mes</span>
+        </div>
+        <div class="chart-container">
+          <div class="horizontal-bar-sim">
+            <div *ngFor="let category of salesByCategoryData.labels; let i = index" class="bar-item">
+              <span class="category-label">{{category}}</span>
+              <div class="bar-track">
+                <div class="bar-fill" 
+                     [style.background]="salesByCategoryData.datasets[0].backgroundColor[i]"
+                     [style.width]="salesByCategoryData.datasets[0].data[i] + '%'">
+                  <span class="bar-value">{{salesByCategoryData.datasets[0].data[i]}}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfica 5: Ingresos mensuales -->
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <h3>Ingresos Mensuales</h3>
+          <span class="chart-subtitle">Comparativo anual</span>
+        </div>
+        <div class="chart-container">
+          <div class="line-chart-sim">
+            <div class="line-group">
+              <div class="line" [style]="'--data: ' + monthlyRevenueData.datasets[0].data.join(',')">
+                <div class="line-point" *ngFor="let point of monthlyRevenueData.datasets[0].data; let i = index"
+                     [style.left]="i * (100/6) + '%'" [style.bottom]="(point/2000) + 'px'">
+                  <span class="point-value">${{point/1000}}K</span>
+                </div>
+              </div>
+              <div class="line" [style]="'--data: ' + monthlyRevenueData.datasets[1].data.join(',')">
+                <div class="line-point" *ngFor="let point of monthlyRevenueData.datasets[1].data; let i = index"
+                     [style.left]="i * (100/6) + '%'" [style.bottom]="(point/2000) + 'px'">
+                  <span class="point-value">${{point/1000}}K</span>
+                </div>
+              </div>
+            </div>
+            <div class="x-axis">
+              <span *ngFor="let label of monthlyRevenueData.labels" class="axis-label">{{label}}</span>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-item"><div class="color primary"></div> 2024</span>
+              <span class="legend-item"><div class="color secondary"></div> 2023</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfica 6: Actividad por hora -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Actividad por Hora</h3>
+          <span class="chart-subtitle">Promedio diario</span>
+        </div>
+        <div class="chart-container">
+          <div class="activity-chart-sim">
+            <div class="activity-bars">
+              <div *ngFor="let hour of [9,10,11,12,13,14,15,16,17]; let i = index" class="activity-bar">
+                <div class="bar" [style.height]="(getRandomHeight() * 100) + 'px'"></div>
+                <span class="hour-label">{{hour}}:00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

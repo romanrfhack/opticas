@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
 export interface UserItem {
-  id: string; email: string; fullName: string; sucursalId: string; sucursalNombre: string;
+  id: string; email: string; fullName: string; phoneNumber: string; sucursalId: string; sucursalNombre: string;
   roles: string[]; lockedOut: boolean;
 }
 
@@ -31,6 +31,10 @@ export class UsersService {
 
   resetPassword(id: string, newPassword: string) {
     return this.http.post<void>(`${this.base}/${id}/reset-password`, { newPassword });
+  }
+
+  getUserById(id: string) {
+    return this.http.get<UserItem>(`${this.base}/${id}`);
   }
 
   setLock(id: string, lock: boolean) {
