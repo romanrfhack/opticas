@@ -25,18 +25,20 @@ jobs:
     - name: 🏗️ Build Angular
       run: |
         npm run build -- --configuration=production
-        echo "=== ARCHIVOS GENERADOS ==="
+        echo "=== ESTRUCTURA COMPLETA DEL BUILD ==="
+        find dist/ -type f -name "*.js" -o -name "*.css" -o -name "index.html" | head -20
+        echo "=== CONTENIDO DE dist/Opticas/browser/ ==="
         ls -la dist/Opticas/browser/
         
-    - name: 🔐 Deploy to VPS
+    - name: 🔐 Deploy Angular to VPS
       uses: appleboy/scp-action@v0.1.4
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
-        source: "dist/Opticas/browser/**/*"
+        source: "dist/Opticas/browser/*"
         target: "/var/www/mi-optica/frontend/"
-        strip_components: 3
+        strip_components: 2 
         overwrite: true
         
     - name: 🔄 Set Permissions
@@ -50,3 +52,15 @@ jobs:
           sudo chown -R www-data:www-data /var/www/mi-optica/frontend
           sudo chmod -R 755 /var/www/mi-optica/frontend
           echo "🎉 Angular desplegado correctamente"
+    
+    - name: 🔄 Verify Deployment
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          echo "=== ARCHIVOS EN FRONTEND ==="
+          ls -la /var/www/mi-optica/frontend/
+          echo "=== ARCHIVOS JS/HTML ==="
+          find /var/www/mi-optica/frontend -name "*.js" -o -name "*.css" -o -name "index.html" | head -10
