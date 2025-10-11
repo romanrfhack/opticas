@@ -11,7 +11,7 @@ export class HistoriasService {
   private http = inject(HttpClient);
   private base = environment.apiBaseUrl;
 
-  crear(req: CrearHistoriaRequest) {
+  create(req: CrearHistoriaRequest) {
     return this.http.post<{ id: string }>(`${this.base}/historias`, req);
   }
 

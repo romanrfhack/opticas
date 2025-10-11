@@ -66,10 +66,10 @@ import { CompactSucursalSwitcherComponent } from '../../shared/sucursal-switcher
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
           <mat-icon [style.color]="'#06b6d4'">groups</mat-icon><span>Clientes</span>
         </a>
-        <a routerLink="/historias" routerLinkActive="bg-cyan-50 text-cyan-600"
+        <!-- <a routerLink="/historias" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
           <mat-icon [style.color]="'#06b6d4'">visibility</mat-icon><span>Historias</span>
-        </a>
+        </a> -->
         <a routerLink="/ordenes" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
           <mat-icon [style.color]="'#06b6d4'">assignment</mat-icon><span>Órdenes</span>

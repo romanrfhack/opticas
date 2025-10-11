@@ -1,7 +1,7 @@
 export type Ojo = 'OD' | 'OI';
 export type RxDistancia = 'Lejos' | 'Cerca';
 export type CondicionAV = 'SinLentes' | 'ConLentes';
-export type MetodoPago = 'Efectivo' | 'Tarjeta';
+export type MetodoPago = 'Efectivo' | 'Tarjeta' | 'Transferencia';
 
 export interface Paciente {
   id: string;
@@ -21,11 +21,20 @@ export interface PacienteItem {
   direccion?: string | null;
 }
 
-export interface CrearPacienteRequest {
+export interface CrearPacienteRequest {  
   nombre: string;
   edad: number;
   telefono: string;
   ocupacion: string;
+  direccion?: string | null;
+}
+
+export interface UpdatePacienteRequest {
+  id: string;
+  nombre?: string;
+  edad?: number;
+  telefono?: string;
+  ocupacion?: string;
   direccion?: string | null;
 }
 

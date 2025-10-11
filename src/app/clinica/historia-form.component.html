@@ -1,0 +1,85 @@
+<div class="max-w-7xl mx-auto space-y-8 p-4 dashboard-container">
+  <!-- Progress Bar -->
+  <mat-progress-bar mode="indeterminate" *ngIf="loading()" class="rounded-full"></mat-progress-bar>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Col 1-2: Formulario principal -->
+    <div class="lg:col-span-2 space-y-8">
+      
+      <!-- Paciente Section -->
+      <app-paciente-form
+        *ngIf="!pacienteId()"
+        [pacForm]="pacForm"
+        [sugeridos]="sugeridos()"
+        (selectPaciente)="selectPaciente($event)"
+        (crearPaciente)="crearPaciente()">
+      </app-paciente-form>
+
+      <!-- Tarjeta compacta del paciente -->
+      <app-paciente-card
+        *ngIf="pacienteId()"
+        [pacForm]="pacForm"
+        (editarPaciente)="editarPaciente()">
+      </app-paciente-card>
+
+      <!-- Resto del formulario -->
+      <div *ngIf="pacienteId()" class="space-y-8">
+        <!-- Agudeza Visual -->
+        <app-agudeza-visual
+          [(avSinOD)]="avSinOD"
+          [(avSinOI)]="avSinOI"
+          [(avConOD)]="avConOD"
+          [(avConOI)]="avConOI">
+        </app-agudeza-visual>
+
+        <!-- RX Section -->
+        <app-rx-form [filasRx]="filasRx"></app-rx-form>
+
+        <!-- Materiales Section -->
+        <app-materiales-form
+          [materiales]="materiales()"
+          [materialesSel]="materialesSel()"
+          (agregarMaterial)="agregarMaterial()"
+          (quitarMaterial)="quitarMaterial($event)"
+          [(materialSelId)]="materialSelId"
+          [(materialObs)]="materialObs">
+        </app-materiales-form>
+
+        <!-- Lente de Contacto Section -->
+        <app-lentes-contacto
+          [lcSel]="lcSel()"
+          (agregarLC)="agregarLC()"
+          (quitarLC)="quitarLC($event)"
+          [(lcTipo)]="lcTipo"
+          [(lcMarca)]="lcMarca"
+          [(lcModelo)]="lcModelo"
+          [(lcObs)]="lcObs">
+        </app-lentes-contacto>
+
+        <!-- Observaciones y Acciones -->
+        <app-observaciones-acciones
+          [(observaciones)]="observaciones"
+          [pacienteId]="pacienteId()"
+          [historiaId]="historiaId()"
+          (guardar)="guardar()"
+          (abrirEnviarLab)="abrirEnviarLab()">
+        </app-observaciones-acciones>
+      </div>
+    </div>
+
+    <!-- Col 3: Últimas visitas -->
+    <div class="space-y-8" *ngIf="pacienteId()">
+      <mat-card class="form-card">
+        <mat-card-header class="border-b border-gray-100 pb-4">
+          <mat-card-title class="flex items-center gap-2 text-lg font-semibold">
+            <mat-icon class="text-primary">history</mat-icon>
+            Historial del Paciente
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <app-ultimas-visitas [pacienteId]="pacienteId()"></app-ultimas-visitas>            
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
