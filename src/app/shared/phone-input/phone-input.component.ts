@@ -1,9 +1,11 @@
+import { CommonModule } from '@angular/common';
 import { Component, forwardRef, Input } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, NG_VALIDATORS, Validator, AbstractControl, ValidationErrors } from '@angular/forms';
 
 @Component({
   selector: 'app-phone-input',
   templateUrl: './phone-input.component.html',
+  imports: [CommonModule],
   styleUrls: ['./phone-input.component.css'],
   providers: [
     { provide: NG_VALUE_ACCESSOR, useExisting: forwardRef(() => PhoneInputComponent), multi: true },

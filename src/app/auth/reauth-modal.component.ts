@@ -3,13 +3,14 @@ import { Component } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { AuthService } from './auth.service';
 // Make sure FormsModule is imported in your module
 
 @Component({
   selector: 'app-reauth-modal',
   standalone: true,
-  imports: [FormsModule],  
+  imports: [FormsModule, CommonModule],  
   template: `
     <div class="modal-header">
       <h4 class="modal-title">Sesión Expirada</h4>
