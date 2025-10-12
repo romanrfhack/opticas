@@ -29,17 +29,17 @@ jobs:
         echo "=== CONTENIDO DE dist/Opticas/browser/ ==="
         ls -la dist/Opticas/browser/
         
-    - name: 🔐 Deploy Angular Files
-      uses: appleboy/scp-action@v0.1.4
+    - name: 📤 Deploy via Rsync
+      uses: burnett01/rsync-deployments@7.0.1
       with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        source: "dist/Opticas/browser/."
-        target: "/var/www/mi-optica/frontend/"
-        overwrite: true
+        switches: -avzr --delete
+        path: dist/Opticas/browser/
+        remote_path: /var/www/mi-optica/frontend/
+        remote_host: ${{ secrets.VPS_HOST }}
+        remote_user: ${{ secrets.VPS_USER }}
+        remote_key: ${{ secrets.VPS_SSH_KEY }}
         
-    - name: 🔄 Verify and Fix Permissions
+    - name: 🔄 Final Setup
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.VPS_HOST }}
@@ -47,14 +47,10 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
           echo "✅ VERIFICANDO DEPLOYMENT..."
-          
-          # Verificar estructura final
           echo "=== ESTRUCTURA FINAL ==="
           ls -la /var/www/mi-optica/frontend/
-          
           echo "=== ARCHIVOS PRINCIPALES ==="
           find /var/www/mi-optica/frontend -maxdepth 1 -type f -name "*.js" -o -name "*.css" -o -name "index.html" | head -10
-          
           echo "=== VERIFICANDO INDEX.HTML ==="
           head -3 /var/www/mi-optica/frontend/index.html
           
@@ -64,4 +60,4 @@ jobs:
           
           # Recargar Nginx
           sudo nginx -t && sudo systemctl reload nginx
-          echo "🎉 Angular desplegado correctamente en https://opticasolivar.site"
+          echo "🎉 Sitio desplegado correctamente: https://opticasolivar.site"
