@@ -35,9 +35,8 @@ jobs:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
-        source: "dist/Opticas/browser/**/*"
+        source: "dist/Opticas/browser/*"
         target: "/var/www/mi-optica/frontend/"
-        strip_components: 3
         overwrite: true
         
     - name: 🔄 Organize Files on Server
@@ -48,13 +47,6 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
           echo "📁 Organizando archivos en el servidor..."
-          
-          # Si se creó la carpeta browser/, mover todo a la raíz
-          if [ -d "/var/www/mi-optica/frontend/browser" ]; then
-            echo "🔄 Moviendo archivos de browser/ a raíz..."
-            sudo mv /var/www/mi-optica/frontend/browser/* /var/www/mi-optica/frontend/ 2>/dev/null || true
-            sudo rmdir /var/www/mi-optica/frontend/browser 2>/dev/null || true
-          fi
           
           # Asegurar permisos
           sudo chown -R www-data:www-data /var/www/mi-optica/frontend
@@ -70,4 +62,4 @@ jobs:
           
           # Recargar Nginx
           sudo nginx -t && sudo systemctl reload nginx
-          echo "🎉 Angular desplegado correctamente en http://194.238.26.70"
+          echo "🎉 Angular desplegado correctamente en https://opticasolivar.site"
