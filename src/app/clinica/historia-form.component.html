@@ -35,18 +35,20 @@
         <!-- RX Section -->
         <app-rx-form [filasRx]="filasRx"></app-rx-form>
 
-        <!-- Materiales Section -->
+        <!-- Materiales Section -->        
         <app-materiales-form
           [materiales]="materiales()"
           [materialesSel]="materialesSel()"
-          (agregarMaterial)="agregarMaterial()"
+          (agregarMaterial)="agregarMaterial($event)"
           (quitarMaterial)="quitarMaterial($event)"
           [(materialSelId)]="materialSelId"
-          [(materialObs)]="materialObs">
+          [(materialObs)]="materialObs"
+          (armazonesChange)="onArmazonesChange($event)"
+          (lentesContactoChange)="onLentesContactoChange($event)"> <!-- NUEVO OUTPUT -->
         </app-materiales-form>
 
         <!-- Lente de Contacto Section -->
-        <app-lentes-contacto
+        <!-- <app-lentes-contacto
           [lcSel]="lcSel()"
           (agregarLC)="agregarLC()"
           (quitarLC)="quitarLC($event)"
@@ -54,16 +56,64 @@
           [(lcMarca)]="lcMarca"
           [(lcModelo)]="lcModelo"
           [(lcObs)]="lcObs">
-        </app-lentes-contacto>
+        </app-lentes-contacto> -->
 
-        <!-- Observaciones y Acciones -->
-        <app-observaciones-acciones
-          [(observaciones)]="observaciones"
-          [pacienteId]="pacienteId()"
-          [historiaId]="historiaId()"
-          (guardar)="guardar()"
-          (abrirEnviarLab)="abrirEnviarLab()">
-        </app-observaciones-acciones>
+        <!-- Observaciones -->                
+        <mat-card class="form-card">
+          <mat-card-header class="border-b border-gray-100 pb-4 mb-4">
+            <mat-card-title class="flex items-center gap-2 text-lg font-semibold">
+              <mat-icon [style.color]="'#06b6d4'" class="text-primary">notes</mat-icon>
+              Observaciones Finales
+            </mat-card-title>
+            <mat-card-subtitle class="text-gray-600">Notas adicionales del examen</mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content>
+            <mat-form-field appearance="fill" class="w-full custom-form-field">
+              <mat-label>Observaciones y notas del examen</mat-label>
+              <textarea rows="4" matInput [(ngModel)]="observaciones" 
+                        placeholder="Escribe aquí cualquier observación importante..."></textarea>
+              <mat-icon matPrefix class="prefix-icon">notes</mat-icon>
+            </mat-form-field>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Botones de Acción -->
+        <mat-card class="form-card">
+          <mat-card-content>
+            <div class="flex gap-4">
+              <button mat-flat-button 
+                      color="primary" 
+                      (click)="guardarBorrador()" 
+                      [disabled]="!pacienteId()"
+                      class="save-button flex-1 py-3">
+                <mat-icon>save</mat-icon>
+                Guardar Borrador
+              </button>
+              <button mat-flat-button 
+                      color="accent" 
+                      (click)="registrarPagoAdelanto()" 
+                      [disabled]="!historiaId()"
+                      class="payment-button flex-1 py-3">
+                <mat-icon>payments</mat-icon>
+                Registrar pago / adelanto
+              </button>
+            </div>
+            
+            <!-- Estado del formulario (opcional, para debug) -->
+            <div class="mt-4 p-3 bg-gray-50 rounded-lg" *ngIf="false"> <!-- Cambia a *ngIf="true" para ver el estado -->
+              <h4 class="font-medium text-sm text-gray-700 mb-2">Estado del formulario:</h4>
+              <div class="text-xs text-gray-600 space-y-1">
+                <div>Paciente: {{ pacienteId() ? 'Seleccionado' : 'No seleccionado' }}</div>
+                <div>Agudeza Visual: {{ (avSinOD || avSinOI || avConOD || avConOI) ? 'Capturada' : 'No capturada' }}</div>
+                <div>RX: {{ filasRx.length > 0 ? 'Configurada' : 'No configurada' }}</div>
+                <div>Materiales: {{ materialesSel().length }} seleccionados</div>
+                <div>Armazones: {{ armazonesSel.length }} seleccionados</div>
+                <div>Lentes Contacto: {{ lentesContactoSel.length }} seleccionados</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
       </div>
     </div>
 

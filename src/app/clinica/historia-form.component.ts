@@ -18,22 +18,18 @@ import { of } from 'rxjs';
 import { PacientesService } from '../core/pacientes.service';
 import { HistoriasService } from '../core/historias.service';
 import { MaterialesService } from '../core/materiales.service';
-import { AgudezaDto, CrearHistoriaRequest, LcDto, MaterialItem, PacienteItem, RxDto } from '../core/models/clinica.models';
+import { AgudezaDto, CrearHistoriaRequest, LcDto, MaterialHistoriaDto, MaterialItem, PacienteItem, RxDto } from '../core/models/clinica.models';
 import { EnviarLabDialog } from './enviar-lab.dialog';
 import { UltimasVisitasComponent } from './ultimas-visitas.component';
 
 // Componentes hijos
 
-//import { PacienteCardComponent } from './components/paciente-card.component';
+
 import { AgudezaVisualComponent } from './components/agudeza-visual.component';
 import { RxFormComponent } from './components/rx-form.component';
 import { MaterialesFormComponent } from './components/materiales-form.component';
-
 import { PacienteCardComponent } from './components/paciente-card.component';
-//import { LentesContactoComponent } from './components/lentes-contacto.component';
-import { ObservacionesAccionesComponent } from './components/observaciones-acciones.component';
 import { PacienteFormComponent } from './components/paciente-form.component';
-import { LentesContactoComponent } from './components/lentes-contacto.component';
 
 @Component({
   standalone: true,
@@ -49,10 +45,8 @@ import { LentesContactoComponent } from './components/lentes-contacto.component'
     PacienteCardComponent,
     AgudezaVisualComponent,
     RxFormComponent,
-    MaterialesFormComponent,
-    LentesContactoComponent,
-    ObservacionesAccionesComponent,
-    UltimasVisitasComponent
+    MaterialesFormComponent,    
+    UltimasVisitasComponent  
   ],
   templateUrl: './historia-form.component.html'
 })
@@ -64,6 +58,7 @@ export class HistoriaFormComponent implements OnInit {
   private dialog = inject(MatDialog);
   private snack = inject(MatSnackBar);
   private destroyRef = inject(DestroyRef);
+  observaciones: string = '';
 
   loading = signal(false);
 
@@ -100,9 +95,12 @@ export class HistoriaFormComponent implements OnInit {
   lcSel = signal<LcDto[]>([]);
   lcTipo: LcDto['tipo'] = 'Esferico';
   lcMarca = ''; lcModelo = ''; lcObs = '';
-
-  observaciones: string = '';
+  
   historiaId = signal<string | null>(null);
+
+  // Propiedades para manejar los datos
+armazonesSel: any[] = []; // O el tipo específico que uses
+lentesContactoSel: any[] = []; // Para lentes de contacto
 
   ngOnInit() {
     // Autocomplete de pacientes
@@ -165,22 +163,50 @@ export class HistoriaFormComponent implements OnInit {
   editarPaciente() {
     this.pacienteId.set(null);
   }
+  
+  // En historia-form.component.ts
+agregarMaterial(materialData?: MaterialHistoriaDto) {
+  if (!this.materialSelId && !materialData) return;
+  
+  let materialId: string;
+  let observaciones: string;
 
-  agregarMaterial() {
-    if (!this.materialSelId) return;
-    const mat = this.materiales().find(m => m.id === this.materialSelId);
-    if (!mat) return;
-    this.materialesSel.update(list => [...list, {
-      ...mat,
-      observaciones: this.materialObs
-    }]);
-    this.materialSelId = null;
-    this.materialObs = '';
+  // Si viene el data completo (con observaciones), usarlo
+  if (materialData) {
+    materialId = materialData.materialId;
+    observaciones = materialData.observaciones || '';
+  } else {
+    // Si no, usar los valores locales (para compatibilidad)
+    materialId = this.materialSelId!;
+    observaciones = this.materialObs;
   }
 
-  quitarMaterial(i: number) {
-    this.materialesSel.update(list => list.filter((_, idx) => idx !== i));
-  }
+  const mat = this.materiales().find(m => m.id === materialId);
+  if (!mat) return;
+  
+  console.log('📦 Agregando material al estado principal:');
+  console.log('   - Material:', mat.descripcion);
+  console.log('   - Observaciones:', observaciones);
+  
+  this.materialesSel.update(list => [...list, {
+    ...mat,
+    observaciones: observaciones // ✅ Asegurar que las observaciones se guarden
+  }]);
+  
+  this.materialSelId = null;
+  this.materialObs = '';
+}
+
+quitarMaterial(index: number) {
+  console.log('🗑️ Quitando material en índice:', index);
+  console.log('📋 Materiales antes:', this.materialesSel());
+  
+  this.materialesSel.update(list => {
+    const nuevaLista = list.filter((_, idx) => idx !== index);
+    console.log('📋 Materiales después:', nuevaLista);
+    return nuevaLista;
+  });
+}
 
   agregarLC() {
     if (!this.lcTipo) return;
@@ -226,6 +252,7 @@ export class HistoriaFormComponent implements OnInit {
         materialId: m.id,
         observaciones: m.observaciones
       })),
+      
       lentesContacto: this.lcSel(),
       observaciones: this.observaciones,
       armazones: [] // Agrega aquí los armazones, o un array vacío si no hay
@@ -254,4 +281,98 @@ export class HistoriaFormComponent implements OnInit {
       data: { historiaId: this.historiaId() }
     });
   }
+
+  
+
+// En el componente principal, actualiza las propiedades para lentes de contacto
+//lentesContactoSel: any[] = [];
+
+// Método para manejar lentes de contacto desde MaterialesFormComponent
+onLentesContactoChange(lentes: any[]) {
+  this.lentesContactoSel = lentes;
+  console.log('📦 Lentes de contacto actualizados:', lentes);
+}
+
+
+// En historia-form.component.ts, actualizar el guardarBorrador:
+guardarBorrador() {
+  if (!this.pacienteId()) {
+    console.error('No hay paciente seleccionado');
+    return;
+  }
+
+  // Debug: ver qué tenemos en armazonesSel
+  console.log('🔍 Debug - armazonesSel completo:', this.armazonesSel);
+  console.log('🔍 Debug - primer armazón:', this.armazonesSel[0]);
+
+  // Preparar los datos para guardar
+  const datosHistoria = {
+    pacienteId: this.pacienteId(),
+    agudezaVisual: {
+      sinOD: this.avSinOD,
+      sinOI: this.avSinOI,
+      conOD: this.avConOD,
+      conOI: this.avConOI
+    },
+    prescripcion: this.filasRx,
+    materiales: this.materialesSel().map(m => {
+      console.log('📦 Procesando material para guardar:', m);
+      return {
+        id: m.id,
+        descripcion: m.descripcion,
+        marca: m.marca,
+        observaciones: m.observaciones || '' // ✅ Esto debería capturar las observaciones
+      };
+    }),
+    armazones: this.armazonesSel.map(a => {
+      // Intentar diferentes formas de obtener el ID
+      const productoId = a.id || a.productoId || 'ID_NO_ENCONTRADO';
+      console.log('🔍 Procesando armazón:', a, '-> productoId:', productoId);
+      
+      return {
+        productoId: productoId,
+        observaciones: a.observaciones || ''
+      };
+    }),
+    lentesContacto: this.lentesContactoSel,
+    observaciones: this.observaciones,
+    fecha: new Date().toISOString()
+  };
+
+  console.log('=== GUARDANDO BORRADOR ===');
+  console.log('📋 Datos completos del borrador:');
+  console.log(JSON.stringify(datosHistoria, null, 2));
+  
+  alert('Borrador guardado exitosamente');
+}
+
+// Método para registrar pago/adelanto
+registrarPagoAdelanto() {
+  if (!this.historiaId()) {
+    console.error('No hay historia guardada');
+    return;
+  }
+
+  console.log('Abriendo modal de pago/adelanto para historia:', this.historiaId());
+  
+  // Aquí abrirías el modal de pago/adelanto
+  // this.abrirModalPago();
+}
+
+// Método para manejar cambios en armazones (si no lo tienes)
+onArmazonesChange(armazones: any[]) {
+  console.log('🎯 Armazones recibidos en componente principal:', armazones);
+  this.armazonesSel = armazones;
+}
+
+// Métodos para lentes de contacto (si los usas)
+agregarLenteContacto(lente: any) {
+  this.lentesContactoSel.push(lente);
+}
+
+quitarLenteContacto(index: number) {
+  this.lentesContactoSel.splice(index, 1);
+}
+
+
 }

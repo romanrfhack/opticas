@@ -22,44 +22,24 @@ import { MatIconModule } from '@angular/material/icon';
           <mat-icon [style.color]="'#06b6d4'" class="text-primary">notes</mat-icon>
           Observaciones Finales
         </mat-card-title>
-        <mat-card-subtitle class="text-gray-600">Notas adicionales y acciones</mat-card-subtitle>
+        <mat-card-subtitle class="text-gray-600">Notas adicionales del examen</mat-card-subtitle>
       </mat-card-header>
 
       <mat-card-content>
-        <mat-form-field [style.color]="'#06b6d4'" appearance="fill" class="w-full custom-form-field">
+        <mat-form-field appearance="fill" class="w-full custom-form-field">
           <mat-label>Observaciones y notas del examen</mat-label>
           <textarea rows="4" matInput [(ngModel)]="observaciones" placeholder="Escribe aquí cualquier observación importante..."></textarea>
           <mat-icon matPrefix class="prefix-icon">notes</mat-icon>
         </mat-form-field>
-
-        <div class="flex gap-4 pt-4">
-          <button mat-flat-button 
-                  color="primary" 
-                  (click)="guardar.emit()" 
-                  [disabled]="!pacienteId"
-                  class="save-button flex-1">
-            <mat-icon>save</mat-icon>
-            Guardar Borrador
-          </button>
-          <button mat-flat-button 
-                  color="primary" 
-                  (click)="abrirEnviarLab.emit()" 
-                  [disabled]="!historiaId"
-                  class="save-button flex-1">
-            <mat-icon>send</mat-icon>
-            Registrar pago / adelanto
-          </button>
-        </div>
       </mat-card-content>
     </mat-card>
   `
 })
 export class ObservacionesAccionesComponent {
   @Input() observaciones: string = '';
-  @Input() pacienteId: string | null = null;
-  @Input() historiaId: string | null = null;
-  
   @Output() observacionesChange = new EventEmitter<string>();
-  @Output() guardar = new EventEmitter<void>();
-  @Output() abrirEnviarLab = new EventEmitter<void>();
+
+  onObservacionesChange() {
+    this.observacionesChange.emit(this.observaciones);
+  }
 }
