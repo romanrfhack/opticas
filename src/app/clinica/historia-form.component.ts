@@ -30,9 +30,10 @@ import { RxFormComponent } from './components/rx-form.component';
 import { MaterialesFormComponent } from './components/materiales-form.component';
 
 import { PacienteCardComponent } from './components/paciente-card.component';
-import { LentesContactoComponent } from './components/lentes-contacto.component';
+//import { LentesContactoComponent } from './components/lentes-contacto.component';
 import { ObservacionesAccionesComponent } from './components/observaciones-acciones.component';
 import { PacienteFormComponent } from './components/paciente-form.component';
+import { LentesContactoComponent } from './components/lentes-contacto.component';
 
 @Component({
   standalone: true,
@@ -226,7 +227,8 @@ export class HistoriaFormComponent implements OnInit {
         observaciones: m.observaciones
       })),
       lentesContacto: this.lcSel(),
-      observaciones: this.observaciones
+      observaciones: this.observaciones,
+      armazones: [] // Agrega aquí los armazones, o un array vacío si no hay
     };
 
     this.hisApi.create(req).pipe(

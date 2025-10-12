@@ -74,7 +74,8 @@ export interface MaterialItem {
   marca?: string | null;
 }
 
-export interface MaterialDto {
+// Interfaces para materiales en historias - UNIFICADAS
+export interface MaterialHistoriaDto {
   materialId: string;
   observaciones?: string | null;
 }
@@ -86,13 +87,55 @@ export interface LcDto {
   observaciones?: string | null;
 }
 
+export interface SucursalStockDto {
+  sucursalId: string;
+  nombreSucursal: string;
+  stock: number;
+}
+
+export interface ArmazonesDto {
+  id: string;
+  sku: string;
+  nombre: string;
+  categoria: string;
+  activo: boolean;
+  stock: number;
+  enSucursalActiva: boolean;
+  sucursalesConStock: SucursalStockDto[];
+}
+
+// Interface para productos/armazones
+export interface ProductDto {
+  id: string;
+  sku: string;
+  nombre: string;
+  categoria: string;
+  activo: boolean;
+}
+
+// Interfaces para armazones en historias
+export interface ArmazonHistoriaDto {
+  productoId: string;
+  observaciones?: string | null;
+}
+
+// Interface para mostrar armazones en el frontend
+export interface ArmazonItem {
+  productoId: string;
+  sku: string;
+  nombre: string;
+  observaciones?: string | null;
+}
+
+// Interface única para crear historia
 export interface CrearHistoriaRequest {
   pacienteId: string;
   observaciones?: string | null;
   av: AgudezaDto[];
   rx: RxDto[];
-  materiales: MaterialDto[];
+  materiales: MaterialHistoriaDto[];
   lentesContacto: LcDto[];
+  armazones: ArmazonHistoriaDto[]; // Nueva propiedad
 }
 
 export interface UltimaHistoriaItem {

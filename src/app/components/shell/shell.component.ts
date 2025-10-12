@@ -28,7 +28,8 @@ import { CompactSucursalSwitcherComponent } from '../../shared/sucursal-switcher
     RouterOutlet, RouterLink, RouterLinkActive, MatSidenav,
     MatSidenavModule, MatToolbarModule, MatIconModule, MatButtonModule, 
     MatListModule, MatDividerModule, MatMenuModule, MatTooltipModule,
-    CompactSucursalSwitcherComponent
+    CompactSucursalSwitcherComponent,
+    NgIf
   ],
   template: `
   <mat-sidenav-container class="h-screen bg-gray-50">
@@ -50,10 +51,12 @@ import { CompactSucursalSwitcherComponent } from '../../shared/sucursal-switcher
       <mat-divider></mat-divider>
 
       <nav class="p-2">
-        <a routerLink="/dashboard" routerLinkActive="bg-cyan-50 text-cyan-600"
-           class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
+        <div *ngIf="isAdmin()"> 
+          <a routerLink="/dashboard" routerLinkActive="bg-cyan-50 text-cyan-600"
+          class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
           <mat-icon [style.color]="'#06b6d4'">dashboard</mat-icon><span>Dashboard</span>
-        </a>        
+        </a>                
+      </div>
         <a routerLink="/clinica/historia" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">                 
           <mat-icon [style.color]="'#06b6d4'">person_add</mat-icon><span>Nuevo cliente</span>
@@ -140,8 +143,8 @@ import { CompactSucursalSwitcherComponent } from '../../shared/sucursal-switcher
               <mat-icon class="!text-white">account_circle</mat-icon>
             </div>
             <div class="text-left leading-tight">
-              <div class="text-sm font-medium text-gray-900">{{ auth.user()?.name ?? 'Usuario' }}</div>
-              <div class="text-xs text-gray-500 truncate max-w-[180px]">{{ auth.user()?.email ?? '' }}</div>
+              <div class="text-sm font-medium text-gray-900">{{ authService.user()?.name ?? 'Usuario' }}</div>
+              <div class="text-xs text-gray-500 truncate max-w-[180px]">{{ authService.user()?.email ?? '' }}</div>
             </div>
             <mat-icon>expand_more</mat-icon>
           </button>
@@ -213,8 +216,10 @@ export class ShellComponent {
   opened = signal(true);
   isHandset = signal(false);
   isDarkMode = signal(false);
-  auth = inject(AuthService);
+  //auth = inject(AuthService);
   branchesService = inject(BranchesService);
+  authService = inject(AuthService);
+  isAdmin = computed(() => !!this.authService.user()?.roles?.includes('Admin'));
   @ViewChild('sidenav') sidenav!: MatSidenav;
 
   theme = 'light';
@@ -236,7 +241,8 @@ export class ShellComponent {
   }
 
   logout() {
-    this.auth.logout();
+    this.authService.logout();
     location.href = '/login';
   }
+    
 }

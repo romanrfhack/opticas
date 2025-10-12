@@ -1,10 +1,15 @@
 // reauth-modal.component.ts
 import { Component } from '@angular/core';
 import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
-import { AuthService } from '../../services/auth.service';
+
+import { FormsModule } from '@angular/forms';
+import { AuthService } from './auth.service';
+// Make sure FormsModule is imported in your module
 
 @Component({
   selector: 'app-reauth-modal',
+  standalone: true,
+  imports: [FormsModule],  
   template: `
     <div class="modal-header">
       <h4 class="modal-title">Sesión Expirada</h4>
@@ -41,7 +46,7 @@ import { AuthService } from '../../services/auth.service';
               [disabled]="loading || pin.length !== 4">
         <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
         {{ loading ? 'Validando...' : 'Continuar' }}
-      </button>como 
+      </button>
     </div>
   `,
   styles: [`

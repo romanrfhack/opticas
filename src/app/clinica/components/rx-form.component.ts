@@ -13,57 +13,57 @@ import { MatIconModule } from '@angular/material/icon';
   ],
   template: `
     <mat-card class="form-card">
-      <mat-card-header class="border-b border-gray-100 pb-4 mb-4">
-        <mat-card-title class="flex items-center gap-2 text-lg font-semibold">
-          <mat-icon [style.color]="'#06b6d4'" class="text-primary">healing</mat-icon>
+      <mat-card-header class="border-b border-gray-100 pb-3 mb-3">
+        <mat-card-title class="flex items-center gap-2 text-base font-semibold">
+          <mat-icon [style.color]="'#06b6d4'" class="text-primary" style="width: 18px; height: 18px; font-size: 18px;">healing</mat-icon>
           R.X. - Prescripción
         </mat-card-title>
-        <mat-card-subtitle class="text-gray-600">
-          Valores de lejos y cerca • Los valores de cerca se calculan automáticamente
+        <mat-card-subtitle class="text-gray-600 text-xs">
+          Valores de lejos y cerca • Cálculo automático
         </mat-card-subtitle>
       </mat-card-header>
 
       <mat-card-content>
         <!-- Resumen de estado -->
-        <div *ngIf="hasAnyError()" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <div class="flex items-center gap-2 text-red-700">
-            <mat-icon class="text-red-500 text-sm">error_outline</mat-icon>
-            <span class="text-sm font-medium">Corrige los valores fuera de rango:</span>
+        <div *ngIf="hasAnyError()" class="mb-2 p-1 bg-red-50 border border-red-200 rounded text-xs">
+          <div class="flex items-center gap-1 text-red-700">
+            <mat-icon class="text-red-500" style="width: 12px; height: 12px; font-size: 12px;">error_outline</mat-icon>
+            <span class="font-medium">Valores fuera de rango</span>
           </div>
         </div>
 
-        <div class="overflow-auto rounded-lg border border-gray-200">
-          <table class="w-full text-sm bg-white">
+        <div class="overflow-x-auto rounded border border-gray-200">
+          <table class="w-full bg-white text-[10px] min-w-max">
             <thead class="bg-gray-50">
-              <tr class="text-left text-gray-700 text-xs">
-                <th class="w-20 py-2 px-2 font-medium">Distancia</th>
-                <th class="w-12 py-2 px-2 font-medium">Ojo</th>
-                <th class="w-16 py-2 px-2 font-medium">Esf.</th>
-                <th class="w-16 py-2 px-2 font-medium">Cyl.</th>
-                <th class="w-14 py-2 px-2 font-medium">Eje</th>
-                <th class="w-16 py-2 px-2 font-medium">ADD</th>
-                <th class="w-16 py-2 px-2 font-medium">D.I.P.</th>
-                <th class="w-20 py-2 px-2 font-medium">ALT. OBLEA</th>
+              <tr class="text-gray-700">
+                <th class="w-12 p-0 font-medium text-center border-r">Dist.</th>
+                <th class="w-8 p-0 font-medium text-center border-r">Ojo</th>
+                <th class="w-12 p-0 font-medium text-center border-r">Esf.</th>
+                <th class="w-12 p-0 font-medium text-center border-r">Cyl.</th>
+                <th class="w-10 p-0 font-medium text-center border-r">Eje</th>
+                <th class="w-12 p-0 font-medium text-center border-r">ADD</th>
+                <th class="w-12 p-0 font-medium text-center border-r">D.I.P.</th>
+                <th class="w-14 p-0 font-medium text-center">Alt.Obl.</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let r of filasRx; let i = index" 
                   [class.bg-gray-50]="i % 2 === 0"
-                  class="transition-colors hover:bg-blue-50 text-xs">
+                  class="hover:bg-blue-50">
                 
                 <!-- Distancia -->
-                <td class="py-2 px-2 font-medium">
-                  <span class="text-xs">{{ r.dist }}</span>
+                <td class="p-0 font-medium text-center border-r">
+                  <div class="px-1 py-0.5 text-[10px]">{{ r.dist }}</div>
                 </td>
                 
                 <!-- Ojo -->
-                <td class="py-2 px-2 font-medium">
-                  <span class="text-xs">{{ r.ojo }}</span>
+                <td class="p-0 font-medium text-center border-r">
+                  <div class="px-1 py-0.5 text-[10px]">{{ r.ojo }}</div>
                 </td>
                 
                 <!-- Esf -->
-                <td class="py-2 px-2">
-                  <input class="rx-input compact-input" 
+                <td class="p-0 border-r">
+                  <input class="column-input" 
                          type="number" 
                          step="0.25"
                          [(ngModel)]="r.esf" 
@@ -71,14 +71,11 @@ import { MatIconModule } from '@angular/material/icon';
                          [class.error]="hasError(r, 'esf')"
                          placeholder="0.00"
                          title="Esfera: -20 a +20">
-                  <div *ngIf="hasError(r, 'esf')" class="text-red-500 text-xs mt-1">
-                    {{ getErrorMessage(r, 'esf') }}
-                  </div>
                 </td>
                 
                 <!-- Cyl -->
-                <td class="py-2 px-2">
-                  <input class="rx-input compact-input" 
+                <td class="p-0 border-r">
+                  <input class="column-input" 
                          type="number" 
                          step="0.25"
                          [(ngModel)]="r.cyl" 
@@ -86,28 +83,22 @@ import { MatIconModule } from '@angular/material/icon';
                          [class.error]="hasError(r, 'cyl')"
                          placeholder="0.00"
                          title="Cilindro: -10 a +10">
-                  <div *ngIf="hasError(r, 'cyl')" class="text-red-500 text-xs mt-1">
-                    {{ getErrorMessage(r, 'cyl') }}
-                  </div>
                 </td>
                 
                 <!-- Eje -->
-                <td class="py-2 px-2">
-                  <input class="rx-input compact-input" 
+                <td class="p-0 border-r">
+                  <input class="column-input" 
                          type="number" 
                          [(ngModel)]="r.eje" 
                          (ngModelChange)="onEjeChange(r, $event)"
                          [class.error]="hasError(r, 'eje')"
                          placeholder="0"
                          title="Eje: 0 a 180">
-                  <div *ngIf="hasError(r, 'eje')" class="text-red-500 text-xs mt-1">
-                    {{ getErrorMessage(r, 'eje') }}
-                  </div>
                 </td>
                 
                 <!-- ADD -->
-                <td class="py-2 px-2">
-                  <input class="rx-input compact-input" 
+                <td class="p-0 border-r">
+                  <input class="column-input" 
                          type="number" 
                          step="0.25"
                          [(ngModel)]="r.add" 
@@ -115,87 +106,164 @@ import { MatIconModule } from '@angular/material/icon';
                          [class.error]="hasError(r, 'add')"
                          placeholder="0.00"
                          title="ADD: 1 a 9">
-                  <div *ngIf="hasError(r, 'add')" class="text-red-500 text-xs mt-1">
-                    {{ getErrorMessage(r, 'add') }}
-                  </div>
                 </td>
                 
                 <!-- D.I.P. -->
-                <td class="py-2 px-2">
-                  <input class="rx-input compact-input" 
+                <td class="p-0 border-r">
+                  <input class="column-input" 
                          type="number" 
                          [(ngModel)]="r.dip" 
                          (ngModelChange)="onDipChange(r, $event)"
                          [class.error]="hasError(r, 'dip')"
                          placeholder="55-70"
                          title="D.I.P.: 55 a 70">
-                  <div *ngIf="hasError(r, 'dip')" class="text-red-500 text-xs mt-1">
-                    {{ getErrorMessage(r, 'dip') }}
-                  </div>
                 </td>
                 
                 <!-- ALT. OBLEA -->
-                <td class="py-2 px-2">
-                  <input class="rx-input compact-input" 
+                <td class="p-0">
+                  <input class="column-input" 
                          type="number" 
                          [(ngModel)]="r.altOblea" 
                          (ngModelChange)="onAltObleaChange(r, $event)"
                          [class.error]="hasError(r, 'altOblea')"
                          placeholder="0"
                          title="ALT. OBLEA: 10 a 25">
-                  <div *ngIf="hasError(r, 'altOblea')" class="text-red-500 text-xs mt-1">
-                    {{ getErrorMessage(r, 'altOblea') }}
-                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Leyenda de rangos -->
-        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div class="flex items-center gap-2 text-blue-700 mb-2">
-            <mat-icon class="text-blue-500 text-sm">info</mat-icon>
-            <span class="text-sm font-medium">Rangos válidos:</span>
+        <!-- Mensajes de error debajo de la tabla -->
+        <div *ngIf="hasAnyError()" class="mt-1 space-y-0.5">
+          <div *ngFor="let fila of filasRx" class="text-[10px]">
+            <div *ngFor="let field of ['esf', 'cyl', 'eje', 'add', 'dip', 'altOblea']">
+              <div *ngIf="hasError(fila, field)" 
+                   class="text-red-500 flex items-center gap-0.5">
+                <mat-icon class="text-red-500" style="width: 10px; height: 10px; font-size: 10px;">error</mat-icon>
+                <span>{{fila.dist}} {{fila.ojo}} {{field}}: {{getErrorMessage(fila, field)}}</span>
+              </div>
+            </div>
           </div>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-blue-600">
-            <div>• Esf: -20 a +20</div>
-            <div>• Cyl: -10 a +10</div>
-            <div>• Eje: 0 a 180</div>
-            <div>• ADD: 1 a 9</div>
-            <div>• D.I.P.: 55 a 70</div>
-            <div>• ALT. OBLEA: 10 a 25</div>
+        </div>
+
+        <!-- Leyenda de rangos en una sola fila -->
+        <div class="mt-2 p-1 bg-blue-50 border border-blue-200 rounded text-[10px]">
+          <div class="flex items-center gap-1 text-blue-700 mb-0.5">
+            <mat-icon class="text-blue-500" style="width: 10px; height: 10px; font-size: 10px;">info</mat-icon>
+            <span class="font-medium">Rangos:</span>
+          </div>
+          <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-blue-600">
+            <div>Esf: -20 a +20</div>
+            <div>Cyl: -10 a +10</div>
+            <div>Eje: 0 a 180</div>
+            <div>ADD: 1 a 9</div>
+            <div>D.I.P.: 55 a 70</div>
+            <div>Alt.Obl: 10 a 25</div>
           </div>
         </div>
       </mat-card-content>
     </mat-card>
   `,
   styles: [`
-    .compact-input {
-      @apply w-full text-xs px-2 py-1 border border-gray-300 rounded transition-colors;
-      min-width: 60px;
+    .column-input {
+      width: 100% !important;
+      height: 22px !important;
+      font-size: 10px !important;
+      padding: 0 2px !important;
+      margin: 0 !important;
+      border: 1px solid #d1d5db !important;
+      border-radius: 3px !important;
+      text-align: center !important;
+      background: white !important;
+      line-height: 1 !important;
+      
+      /* Eliminar flechas en Chrome, Safari, Edge, Opera */
+      -webkit-appearance: none !important;
+      -moz-appearance: textfield !important;
     }
 
-    .compact-input:focus {
-      @apply outline-none border-blue-500 ring-1 ring-blue-500;
+    /* Eliminar flechas en Firefox */
+    .column-input[type=number] {
+      -moz-appearance: textfield;
     }
 
-    .compact-input.error {
-      @apply border-red-500 bg-red-50;
+    /* Eliminar flechas en Chrome, Safari, Edge */
+    .column-input::-webkit-outer-spin-button,
+    .column-input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
     }
 
-    .compact-input.error:focus {
-      @apply border-red-500 ring-1 ring-red-500;
+    .column-input:focus {
+      outline: none !important;
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 1px #3b82f6 !important;
     }
 
-    /* Hacer la tabla más compacta */
+    .column-input.error {
+      border-color: #ef4444 !important;
+      background-color: #fef2f2 !important;
+    }
+
+    .column-input.error:focus {
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 0 1px #ef4444 !important;
+    }
+
+    /* Asegurar que los inputs ocupen todo el ancho de la celda */
+    td {
+      padding: 0 !important;
+      margin: 0 !important;
+      vertical-align: middle !important;
+      height: 24px !important;
+    }
+
+    /* Reset completo de estilos de Angular Material */
+    :host ::ng-deep .mat-form-field {
+      display: none !important;
+    }
+
+    :host ::ng-deep .mat-input-element {
+      min-width: auto !important;
+      width: auto !important;
+    }
+
+    /* Tabla ultra compacta */
     table {
-      font-size: 0.75rem;
+      font-size: 10px !important;
+      line-height: 1 !important;
+      border-collapse: collapse;
     }
 
     th, td {
-      padding: 0.25rem 0.5rem;
+      padding: 0 !important;
+      margin: 0 !important;
+      vertical-align: middle !important;
+      height: 24px !important;
     }
+
+    th {
+      font-weight: 600;
+      font-size: 9px !important;
+      background-color: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    td {
+      border-right: 1px solid #e5e7eb;
+    }
+
+    /* Asegurar que no haya espacios extra */
+    .border-r {
+      border-right: 1px solid #e5e7eb;
+    }
+
+    /* Hacer que las celdas tengan el ancho exacto */
+    th.w-12 { width: 48px; }
+    th.w-8 { width: 32px; }
+    th.w-10 { width: 40px; }
+    th.w-14 { width: 56px; }
   `]
 })
 export class RxFormComponent {
@@ -299,8 +367,6 @@ export class RxFormComponent {
     if (filaLejos.dip !== null && filaLejos.dip !== undefined) {
       filaCerca.dip = Number(filaLejos.dip);
     }
-
-    // ADD y ALT. OBLEA no se calculan - se dejan como están
   }
 
   // Redondear a 0.25 (cuartos)
