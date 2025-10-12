@@ -35,30 +35,32 @@ jobs:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
-        source: "dist/Opticas/browser/*"
+        source: "dist/Opticas/browser/."
         target: "/var/www/mi-optica/frontend/"
         overwrite: true
         
-    - name: 🔄 Organize Files on Server
+    - name: 🔄 Verify and Fix Permissions
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
-          echo "📁 Organizando archivos en el servidor..."
+          echo "✅ VERIFICANDO DEPLOYMENT..."
+          
+          # Verificar estructura final
+          echo "=== ESTRUCTURA FINAL ==="
+          ls -la /var/www/mi-optica/frontend/
+          
+          echo "=== ARCHIVOS PRINCIPALES ==="
+          find /var/www/mi-optica/frontend -maxdepth 1 -type f -name "*.js" -o -name "*.css" -o -name "index.html" | head -10
+          
+          echo "=== VERIFICANDO INDEX.HTML ==="
+          head -3 /var/www/mi-optica/frontend/index.html
           
           # Asegurar permisos
           sudo chown -R www-data:www-data /var/www/mi-optica/frontend
           sudo chmod -R 755 /var/www/mi-optica/frontend
-          
-          # Verificar deployment final
-          echo "✅ DEPLOYMENT COMPLETADO - ESTRUCTURA FINAL:"
-          ls -la /var/www/mi-optica/frontend/
-          echo "=== ARCHIVOS PRINCIPALES ==="
-          find /var/www/mi-optica/frontend -maxdepth 1 -type f -name "*.js" -o -name "*.css" -o -name "index.html" | head -10
-          echo "=== VERIFICANDO INDEX.HTML ==="
-          head -3 /var/www/mi-optica/frontend/index.html
           
           # Recargar Nginx
           sudo nginx -t && sudo systemctl reload nginx
