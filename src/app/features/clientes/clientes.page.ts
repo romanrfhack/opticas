@@ -1,407 +1,385 @@
-import { Component, ChangeDetectionStrategy, inject, signal, DestroyRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, DestroyRef, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatBadgeModule } from '@angular/material/badge';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged, switchMap, catchError, of } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap, catchError, of, tap, filter } from 'rxjs';
 import { PacientesService } from '../../core/pacientes.service';
 import { PacienteGridItem, PacienteLite } from '../../core/models/clinica.models';
+import { UltimasVisitasComponent } from "../../clinica/ultimas-visitas.component";
 
 @Component({
   standalone: true,
   selector: 'app-clientes',
   imports: [
     CommonModule, ReactiveFormsModule,
-    MatTableModule, MatPaginatorModule, MatCardModule, MatFormFieldModule,
-    MatIconModule, MatButtonModule, MatInputModule, MatAutocompleteModule,
-    MatProgressBarModule, MatTooltipModule, MatChipsModule
+    MatCardModule, MatFormFieldModule, MatIconModule, MatButtonModule,
+    MatInputModule, MatAutocompleteModule, MatProgressBarModule,
+    MatTooltipModule, MatChipsModule, MatBadgeModule,
+    UltimasVisitasComponent
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-  <section class="max-w-7xl mx-auto space-y-6 p-4">
-    <!-- Header -->
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-2">
-      <div>
-        <h1 class="text-2xl lg:text-3xl font-bold text-gray-800 flex items-center gap-3">
-          <mat-icon class="text-[#06b6d4] scale-110">groups</mat-icon>
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-cyan-50">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <!-- Header Principal -->
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-[#06b6d4] rounded-2xl shadow-lg mb-4">
+          <mat-icon class="text-white scale-125">groups</mat-icon>
+        </div>
+        <h1 class="text-3xl lg:text-4xl font-bold text-gray-800 mb-3">
           Gestión de Clientes
         </h1>
-        <p class="text-gray-600 mt-1">Busca y gestiona los clientes del sistema</p>
+        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+          Encuentra y gestiona la información de tus clientes de manera rápida y eficiente
+        </p>
       </div>
-      
-      <div class="flex gap-3 flex-wrap">
-        <button mat-stroked-button 
-                (click)="mostrarTodos()"
-                class="action-button border-[#06b6d4] text-[#06b6d4] hover:bg-[#06b6d4] hover:bg-opacity-5 transition-all duration-200">
-          <mat-icon>group</mat-icon>
-          Mostrar Todos
-        </button>
-        <button mat-flat-button 
-                color="primary" 
-                (click)="nuevaVisita()"
-                class="save-button bg-gradient-to-r from-[#06b6d4] to-[#0ea5e9] hover:from-[#0ea5e9] hover:to-[#06b6d4] shadow-md hover:shadow-lg transition-all duration-200">
-          <mat-icon>person_add</mat-icon>
-          Nuevo Cliente
-        </button>
-      </div>
-    </div>
 
-    <!-- Barra de progreso -->
-    <mat-progress-bar mode="indeterminate" *ngIf="loading()" class="rounded-full" color="primary"></mat-progress-bar>
+      <!-- Barra de Progreso -->
+      <mat-progress-bar 
+        mode="indeterminate" 
+        *ngIf="loading()" 
+        class="rounded-full mb-6"
+        color="primary">
+      </mat-progress-bar>
 
-    <!-- Búsqueda -->
-    <mat-card class="form-card border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
-      <mat-card-header class="border-b border-gray-100 pb-4 mb-4">
-        <mat-card-title class="flex items-center gap-2 text-lg font-semibold">
-          <mat-icon class="text-[#06b6d4]">search</mat-icon>
-          Búsqueda de Clientes
-        </mat-card-title>
-        <mat-card-subtitle class="text-gray-600">Busca por nombre o teléfono</mat-card-subtitle>
-      </mat-card-header>
-
-      <mat-card-content>
-        <form [formGroup]="form" class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
-          <mat-form-field appearance="fill" class="lg:col-span-8 custom-form-field">
-            <mat-label>Nombre o teléfono</mat-label>
-            <input matInput 
-                   formControlName="term" 
-                   [matAutocomplete]="auto" 
-                   placeholder="Escribe al menos 2 letras para buscar..."
-                   class="w-full rounded-lg">
-            <mat-icon matPrefix class="prefix-icon text-[#06b6d4]">person_search</mat-icon>
-
-            <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelected($event.option.value)">            
-              <mat-option *ngFor="let s of sugeridos()" [value]="s" class="flex justify-between items-center py-2 hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors">
-                <div class="flex items-center gap-3">
-                  <mat-icon class="text-[#06b6d4] text-base">person</mat-icon>
-                  <div>
-                    <div class="font-medium">{{ s.nombre }}</div>
-                    <div class="text-xs text-gray-500" *ngIf="s.telefono">{{ s.telefono }}</div>
-                  </div>
-                </div>
-                <span class="text-xs text-[#06b6d4] ml-2 font-medium">Seleccionar</span>
-              </mat-option>
-            </mat-autocomplete>
-            <mat-error *ngIf="form.controls.term.hasError('minlength')">Mínimo 2 caracteres</mat-error>
-          </mat-form-field>
-
-          <div class="lg:col-span-4 flex gap-3">
-            <button mat-flat-button 
-                    color="primary" 
-                    (click)="buscarManual()"
-                    [disabled]="form.controls.term.invalid"
-                    class="save-button flex-1 bg-gradient-to-r from-[#06b6d4] to-[#0ea5e9] hover:from-[#0ea5e9] hover:to-[#06b6d4] shadow-md hover:shadow-lg transition-all duration-200">
-              <mat-icon>search</mat-icon>
-              Buscar
-            </button>
-            <button mat-stroked-button 
-                    (click)="limpiar()"
-                    class="action-button border-gray-300 text-gray-600 hover:border-[#06b6d4] hover:text-[#06b6d4] transition-all duration-200">
-              <mat-icon>clear</mat-icon>
-            </button>
+      <!-- Panel de Búsqueda Principal -->
+      <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-8">
+        <div class="max-w-2xl mx-auto">
+          <div class="text-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">
+              ¿A qué cliente buscas?
+            </h2>
+            <p class="text-gray-600">
+              Escribe el nombre o teléfono del cliente
+            </p>
           </div>
-        </form>
 
-        <!-- Contador de resultados -->
-        <div class="mt-4 pt-4 border-t border-gray-100">
-          <div class="flex items-center justify-between text-sm">
-            <div class="flex items-center gap-2 text-gray-600">
-              <mat-icon class="text-base text-[#06b6d4]">info</mat-icon>
-              <span *ngIf="showResultsCount()">
-                Mostrando <strong class="text-[#06b6d4]">{{ rows().length }}</strong> de <strong class="text-[#06b6d4]">{{ total() }}</strong> clientes
+          <form [formGroup]="searchForm" class="relative">
+            <!-- INPUT MEJORADO - Sin línea divisora -->
+
+                        <!-- Search Combobox (Tailwind puro) -->
+            <div class="relative max-w-2xl mx-auto">
+              <label for="search" class="sr-only">Buscar cliente</label>
+              <div
+                class="flex items-center rounded-xl border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-cyan-400 transition"
+                role="combobox"
+                aria-haspopup="listbox"
+                aria-owns="result-list"
+                [attr.aria-expanded]="open"
+              >
+                <svg class="mx-3 h-5 w-5 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-4.35-4.35M10 18a8 8 0 100-16 8 8 0 000 16z"/>
+                </svg>
+
+                <input
+                  id="search"
+                  type="text"
+                  class="flex-1 py-3 pr-10 outline-none bg-transparent text-gray-800 placeholder-gray-400"
+                  placeholder="Buscar cliente…"
+                  [formControl]="searchForm.controls.searchTerm"
+                  (focus)="open = true"
+                  (keydown)="onKeydown($event)"
+                  aria-autocomplete="list"
+                  aria-controls="result-list"
+                  [attr.aria-activedescendant]="activeOptionId"
+                />
+
+                <button
+                  type="button"
+                  class="p-2 text-gray-400 hover:text-cyan-600 focus:outline-none"
+                  *ngIf="searchForm.controls.searchTerm.value"
+                  (click)="clearSearch(); inputEl.focus()"
+                  aria-label="Limpiar búsqueda"
+                >
+                  <mat-icon fontIcon="close"></mat-icon>
+                </button>
+              </div>
+
+              <!-- Dropdown -->
+              <div
+                *ngIf="open && suggestedPatients().length > 0"
+                id="result-list"
+                role="listbox"
+                class="absolute z-50 mt-2 w-full rounded-xl border border-gray-200 bg-white shadow-2xl overflow-hidden"
+              >
+                <button
+                  *ngFor="let p of suggestedPatients(); let i = index"
+                  role="option"
+                  type="button"
+                  [id]="'option-'+i"
+                  (click)="selectFromList(p)"
+                  (mouseenter)="activeIndex = i"
+                  class="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-cyan-50"
+                  [class.bg-cyan-50]="i === activeIndex"
+                  [attr.aria-selected]="i === activeIndex"
+                >
+                  <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-cyan-100 text-cyan-600">
+                    <mat-icon fontIcon="person" class="text-base"></mat-icon>
+                  </span>
+                  <span class="flex-1">
+                    <span class="block font-medium text-gray-800">{{ p.nombre }}</span>
+                    <span class="block text-xs text-gray-500" *ngIf="p.telefono">{{ p.telefono }}</span>
+                  </span>
+                </button>
+              </div>
+
+              <!-- Estado vacío -->
+              <div
+                *ngIf="open && searchForm.controls.searchTerm.value && suggestedPatients().length === 0"
+                class="absolute z-50 mt-2 w-full rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-500"
+              >
+                Sin resultados
+              </div>
+            </div>
+
+
+          </form>
+
+          <!-- Contadores y Filtros -->
+          <div class="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
+            <div class="text-sm text-gray-600">
+              <span *ngIf="displayedPatients().length > 0 && !selectedPatient()">
+                Mostrando <span class="font-semibold text-[#06b6d4]">{{ displayedPatients().length }}</span> 
+                de <span class="font-semibold text-[#06b6d4]">{{ allPatients().length }}</span> clientes
               </span>
-              <span *ngIf="!showResultsCount()">Escribe para buscar clientes...</span>
+              <span *ngIf="displayedPatients().length === 0 && !searchForm.controls.searchTerm.value && !selectedPatient()">
+                Escribe para buscar clientes...
+              </span>
+              <span *ngIf="displayedPatients().length === 0 && searchForm.controls.searchTerm.value && !selectedPatient()">
+                No se encontraron clientes
+              </span>
+              <span *ngIf="selectedPatient()" class="text-[#06b6d4] font-semibold">
+                Vista individual - {{ selectedPatient()?.nombre }}
+              </span>
             </div>
-            <div class="text-[#06b6d4] font-medium flex items-center gap-1" *ngIf="showingSingle()">
-              <mat-icon class="text-base">visibility</mat-icon>
-              Vista individual
-            </div>
+
+            <button 
+              mat-stroked-button
+              (click)="showAllPatients()"
+              class="border-[#06b6d4] text-[#06b6d4] hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors">
+              <mat-icon>refresh</mat-icon>
+              Mostrar Todos
+            </button>
           </div>
         </div>
-      </mat-card-content>
-    </mat-card>
+      </div>
 
-    <!-- Grid de Clientes -->
-    <mat-card class="form-card overflow-hidden border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300">
-      <mat-card-header class="border-b border-gray-100 pb-4">
-        <mat-card-title class="flex items-center gap-2 text-lg font-semibold">
-          <mat-icon class="text-[#06b6d4]">table_chart</mat-icon>
-          Lista de Clientes
-          <span class="text-sm font-normal text-[#06b6d4] ml-2 bg-[#06b6d4] bg-opacity-10 px-2 py-1 rounded-full" *ngIf="total() > 0">
-            {{ total() }} encontrados
-          </span>
-        </mat-card-title>
-      </mat-card-header>
+      <!-- Información del Paciente Seleccionado -->
+      <div *ngIf="selectedPatient()" class="mb-6">
+        <div class="bg-white rounded-2xl shadow-lg border border-[#06b6d4] border-opacity-20 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center gap-3">
+              <mat-icon class="text-[#06b6d4]">person</mat-icon>
+              Información del Cliente
+            </h3>
+            <button 
+              mat-stroked-button
+              (click)="clearSelection()"
+              class="border-[#06b6d4] text-[#06b6d4] hover:bg-[#06b6d4] hover:bg-opacity-5">
+              <mat-icon>close</mat-icon>
+              Ver Todos
+            </button>
+          </div>
+          
+          <app-ultimas-visitas 
+            [pacienteId]="selectedPatient()?.id ?? null"
+            (verDetalle)="onVerDetalleVisita($event)">
+          </app-ultimas-visitas>
+        </div>
+      </div>
 
-      <mat-card-content class="p-0">
-        <div class="overflow-auto custom-scrollbar">
-          <table mat-table 
-                 [dataSource]="rows()" 
-                 class="w-full text-sm min-w-[1000px] rounded-lg overflow-hidden"
-                 [class.loading-table]="loading()">
-            
-            <!-- Cliente Column -->
-            <ng-container matColumnDef="cliente">
-              <th mat-header-cell *matHeaderCellDef class="table-header bg-gradient-to-r from-[#06b6d4] to-[#06b6d4] bg-opacity-10">
-                <div class="flex items-center gap-2">
-                  <mat-icon class="text-base text-[#06b6d4]">person</mat-icon>
-                  Cliente
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let r" class="table-cell border-b border-gray-100 hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors">
-                <div class="flex items-center gap-3">
-                  <div class="flex-shrink-0">
-                    <div class="avatar-placeholder w-10 h-10 rounded-full bg-gradient-to-br from-[#06b6d4] to-[#0ea5e9] flex items-center justify-center text-white">
-                      <mat-icon class="scale-90">person</mat-icon>
-                    </div>
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <div class="font-semibold text-gray-800 truncate">{{ r.nombre }}</div>
-                    <div class="text-xs text-gray-500 truncate" *ngIf="r.ocupacion">
-                      {{ r.ocupacion }}
-                    </div>
-                    <div class="text-xs text-gray-400 mt-1" *ngIf="!r.ocupacion">
-                      Sin ocupación registrada
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </ng-container>
+      <!-- Grid de Clientes - Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" *ngIf="displayedPatients().length > 0 && !selectedPatient()">
+        <mat-card 
+          *ngFor="let patient of displayedPatients()"
+          class="patient-card relative overflow-hidden border border-gray-200 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 hover:border-[#06b6d4] hover:border-opacity-50"
+          [class.ring-2]="patient.tieneOrdenPendiente"
+          [class.ring-amber-200]="patient.tieneOrdenPendiente"
+          [class.bg-amber-50]="patient.tieneOrdenPendiente">
+          
+          <div 
+            *ngIf="patient.tieneOrdenPendiente"
+            class="absolute top-4 right-4 bg-amber-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg z-10">
+            <mat-icon class="text-xs mr-1">schedule</mat-icon>
+            Pendiente
+          </div>
 
-            <!-- Teléfono Column -->
-            <ng-container matColumnDef="telefono">
-              <th mat-header-cell *matHeaderCellDef class="table-header bg-gradient-to-r from-[#06b6d4] to-[#06b6d4] bg-opacity-10">
-                <div class="flex items-center gap-2">
-                  <mat-icon class="text-base text-[#06b6d4]">phone</mat-icon>
-                  Teléfono
+          <div class="p-6 pb-4">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center space-x-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-[#06b6d4] to-[#0d9488] rounded-2xl flex items-center justify-center shadow-lg">
+                  <mat-icon class="text-white scale-110">person</mat-icon>
                 </div>
-              </th>
-              <td mat-cell *matCellDef="let r" class="table-cell border-b border-gray-100 hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors">
-                <div class="flex items-center gap-2" [class.text-gray-400]="!r.telefono">
-                  <mat-icon class="text-base scale-90 text-[#06b6d4]">phone</mat-icon>
-                  <span>{{ r.telefono || 'No registrado' }}</span>
+                <div>
+                  <h3 class="text-xl font-bold text-gray-800 leading-tight">
+                    {{ patient.nombre }}
+                  </h3>
+                  <p class="text-gray-600 text-sm mt-1" *ngIf="patient.ocupacion">
+                    {{ patient.ocupacion }}
+                  </p>
+                  <p class="text-gray-400 text-xs mt-1" *ngIf="!patient.ocupacion">
+                    Sin ocupación registrada
+                  </p>
                 </div>
-              </td>
-            </ng-container>
+              </div>
+            </div>
 
-            <!-- Última Visita Column -->
-            <ng-container matColumnDef="ultima">
-              <th mat-header-cell *matHeaderCellDef class="table-header bg-gradient-to-r from-[#06b6d4] to-[#06b6d4] bg-opacity-10">
-                <div class="flex items-center gap-2">
-                  <mat-icon class="text-base text-[#06b6d4]">event</mat-icon>
-                  Última Visita
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let r" class="table-cell border-b border-gray-100 hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors">
-                <div *ngIf="r.ultimaVisitaFecha; else noVisit" class="space-y-1">
-                  <div class="font-medium text-gray-700">
-                    {{ r.ultimaVisitaFecha | date:'dd/MM/yyyy' }}
+            <div class="flex items-center space-x-2 text-gray-600 mb-3">
+              <mat-icon class="text-[#06b6d4] text-base">phone</mat-icon>
+              <span class="text-sm">{{ patient.telefono || 'No registrado' }}</span>
+            </div>
+          </div>
+
+          <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div class="space-y-1">
+                <div class="text-gray-500 text-xs font-medium">Última Visita</div>
+                <div *ngIf="patient.ultimaVisitaFecha; else noVisit" class="space-y-1">
+                  <div class="font-semibold text-gray-800">
+                    {{ patient.ultimaVisitaFecha | date:'dd/MM/yy' }}
                   </div>
-                  <div class="text-xs text-gray-500">
-                    {{ r.ultimaVisitaFecha | date:'HH:mm' }}
-                  </div>
-                  <mat-chip *ngIf="r.ultimaVisitaEstado" 
-                           [class]="getStatusChipClass(r.ultimaVisitaEstado)"
-                           class="!text-xs !h-5 border border-current border-opacity-20">
-                    {{ r.ultimaVisitaEstado }}
+                  <mat-chip 
+                    *ngIf="patient.ultimaVisitaEstado"
+                    [class]="getStatusChipClass(patient.ultimaVisitaEstado)"
+                    class="!text-xs !h-5 border-0">
+                    {{ patient.ultimaVisitaEstado }}
                   </mat-chip>
                 </div>
                 <ng-template #noVisit>
-                  <div class="text-center text-gray-400 py-2">
-                    <mat-icon class="text-base text-[#06b6d4]">event_busy</mat-icon>
-                    <div class="text-xs mt-1">Sin visitas</div>
-                  </div>
+                  <div class="text-gray-400 text-xs">Sin visitas</div>
                 </ng-template>
-              </td>
-            </ng-container>
+              </div>
 
-            <!-- Resta Column -->
-            <ng-container matColumnDef="resta">
-              <th mat-header-cell *matHeaderCellDef class="table-header bg-gradient-to-r from-[#06b6d4] to-[#06b6d4] bg-opacity-10">
-                <div class="flex items-center gap-2">
-                  <mat-icon class="text-base text-[#06b6d4]">payments</mat-icon>
-                  Saldo Pendiente
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let r" class="table-cell border-b border-gray-100 hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors">
-                <div class="flex items-center gap-2" 
-                     [class]="getAmountClass(r.ultimaVisitaResta || 0)">
-                  <mat-icon class="text-base scale-90">
-                    {{ (r.ultimaVisitaResta || 0) > 0 ? 'warning' : 'check_circle' }}
+              <div class="space-y-1">
+                <div class="text-gray-500 text-xs font-medium">Saldo Pendiente</div>
+                <div class="flex items-center space-x-1" [class]="getAmountClass(patient.ultimaVisitaResta || 0)">
+                  <mat-icon class="text-base">
+                    {{ (patient.ultimaVisitaResta || 0) > 0 ? 'warning' : 'check_circle' }}
                   </mat-icon>
-                  <span class="font-semibold">
-                    {{ (r.ultimaVisitaResta || 0) | number:'1.2-2' }}
+                  <span class="font-bold text-lg">
+                    {{ (patient.ultimaVisitaResta || 0) | number:'1.0-0' }}
                   </span>
                 </div>
-              </td>
-            </ng-container>
+              </div>
+            </div>
+          </div>
 
-            <!-- Último Pago Column -->
-            <ng-container matColumnDef="ultimoPago">
-              <th mat-header-cell *matHeaderCellDef class="table-header bg-gradient-to-r from-[#06b6d4] to-[#06b6d4] bg-opacity-10">
-                <div class="flex items-center gap-2">
-                  <mat-icon class="text-base text-[#06b6d4]">paid</mat-icon>
-                  Último Pago
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let r" class="table-cell border-b border-gray-100 hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors">
-                <ng-container *ngIf="r.ultimoPagoFecha; else noPayment">
-                  <div class="space-y-1">
-                    <div class="font-medium text-green-600">
-                      {{ r.ultimoPagoMonto || 0 | number:'1.2-2' }}
-                    </div>
-                    <div class="text-xs text-gray-500">
-                      {{ r.ultimoPagoFecha | date:'dd/MM/yy' }}
-                    </div>
-                  </div>
-                </ng-container>
-                <ng-template #noPayment>
-                  <div class="text-center text-gray-400 py-2">
-                    <mat-icon class="text-base text-[#06b6d4]">money_off</mat-icon>
-                    <div class="text-xs mt-1">Sin pagos</div>
-                  </div>
-                </ng-template>
-              </td>
-            </ng-container>
+          <div class="p-4 bg-white border-t border-gray-100">
+            <div class="flex space-x-2">
+              <button 
+                mat-stroked-button
+                (click)="selectPatient(patient)"
+                class="flex-1 border-[#06b6d4] text-[#06b6d4] hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors"
+                matTooltip="Ver información detallada">
+                <mat-icon class="mr-2">visibility</mat-icon>
+                Ver Detalle
+              </button>
+              
+              <button 
+                mat-flat-button
+                (click)="createNewVisit(patient)"
+                class="flex-1 custom-primary-button bg-[#06b6d4] hover:bg-[#0d9488] text-white shadow-md hover:shadow-lg transition-all"
+                matTooltip="Crear nueva visita">
+                <mat-icon class="mr-2">add</mat-icon>
+                Nueva Visita
+              </button>
+            </div>
+          </div>
+        </mat-card>
+      </div>
 
-            <!-- Pendiente Column -->
-            <ng-container matColumnDef="pendiente">
-              <th mat-header-cell *matHeaderCellDef class="table-header bg-gradient-to-r from-[#06b6d4] to-[#06b6d4] bg-opacity-10">
-                <div class="flex items-center gap-2">
-                  <mat-icon class="text-base text-[#06b6d4]">pending_actions</mat-icon>
-                  Estado
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let r" class="table-cell border-b border-gray-100 hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors">
-                <div class="flex items-center gap-2">
-                  <div class="status-dot w-3 h-3 rounded-full" [class]="getStatusDotClass(r.tieneOrdenPendiente)"></div>
-                  <span class="text-sm font-medium" 
-                        [class]="getStatusTextClass(r.tieneOrdenPendiente)">
-                    {{ r.tieneOrdenPendiente ? 'Pendiente' : 'Al día' }}
-                  </span>
-                </div>
-              </td>
-            </ng-container>
+      <div 
+        *ngIf="displayedPatients().length === 0 && searchForm.controls.searchTerm.value && !selectedPatient()"
+        class="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-200">
+        <div class="max-w-md mx-auto">
+          <div class="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <mat-icon class="text-gray-400 scale-125">search_off</mat-icon>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-700 mb-2">No se encontraron clientes</h3>
+          <p class="text-gray-500 mb-6">
+            No hay clientes que coincidan con "{{ searchForm.controls.searchTerm.value }}"
+          </p>
+          <button 
+            mat-flat-button
+            (click)="createNewVisit()"
+            class="custom-primary-button bg-[#06b6d4] hover:bg-[#0d9488] text-white shadow-lg hover:shadow-xl transition-all">
+            <mat-icon class="mr-2">person_add</mat-icon>
+            Crear Nuevo Cliente
+          </button>
+        </div>
+      </div>
 
-            <!-- Actions Column -->
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef class="table-header bg-gradient-to-r from-[#06b6d4] to-[#06b6d4] bg-opacity-10 text-right">
-                <div class="flex items-center gap-2 justify-end">
-                  <mat-icon class="text-base text-[#06b6d4]">settings</mat-icon>
-                  Acciones
-                </div>
-              </th>
-              <td mat-cell *matCellDef="let r" class="table-cell border-b border-gray-100 hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors">
-                <div class="flex justify-end gap-2">
-                  <button mat-stroked-button 
-                          (click)="verHistorial(r)"
-                          class="action-button-sm border-[#06b6d4] text-[#06b6d4] hover:bg-[#06b6d4] hover:bg-opacity-5 transition-all duration-200"
-                          matTooltip="Ver historial completo">
-                    <mat-icon>history</mat-icon>
-                    Historial
-                  </button>
-                  <button mat-flat-button 
-                          color="primary" 
-                          (click)="nuevaVisita(r)"
-                          class="save-button-sm bg-gradient-to-r from-[#06b6d4] to-[#0ea5e9] hover:from-[#0ea5e9] hover:to-[#06b6d4] shadow-md hover:shadow-lg transition-all duration-200"
-                          matTooltip="Nueva visita para este cliente">
-                    <mat-icon>add</mat-icon>
-                    Visita
-                  </button>
-                </div>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="cols" class="table-header-row"></tr>
-            <tr mat-row 
-                *matRowDef="let row; columns: cols;" 
-                class="table-row transition-all duration-200 hover:bg-[#06b6d4] hover:bg-opacity-10 cursor-pointer"
-                [class.bg-gray-50]="!row.tieneOrdenPendiente"
-                [class.bg-amber-50]="row.tieneOrdenPendiente"></tr>
-          </table>
-
-          <!-- Empty State -->
-          <div *ngIf="rows().length === 0 && !loading()" class="text-center py-12">
-            <mat-icon class="text-6xl text-gray-300 mb-4">group_off</mat-icon>
-            <h3 class="text-lg font-semibold text-gray-500 mb-2">No se encontraron clientes</h3>
-            <p class="text-gray-400 mb-4">Intenta con otros términos de búsqueda o crea un nuevo cliente</p>
-            <button mat-flat-button color="primary" 
-                    class="bg-gradient-to-r from-[#06b6d4] to-[#0ea5e9] hover:from-[#0ea5e9] hover:to-[#06b6d4] shadow-md hover:shadow-lg transition-all duration-200"
-                    (click)="nuevaVisita()">
-              <mat-icon>person_add</mat-icon>
-              Crear Nuevo Cliente
+      <div 
+        *ngIf="displayedPatients().length === 0 && !searchForm.controls.searchTerm.value && !selectedPatient()"
+        class="text-center py-20">
+        <div class="max-w-lg mx-auto">
+          <div class="w-24 h-24 bg-[#06b6d4] bg-opacity-10 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <mat-icon class="text-[#06b6d4] scale-150">group</mat-icon>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-800 mb-3">Comienza a gestionar tus clientes</h3>
+          <p class="text-gray-600 text-lg mb-8">
+            Busca un cliente existente o crea uno nuevo para empezar
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button 
+              mat-flat-button
+              (click)="showAllPatients()"
+              class="custom-primary-button bg-[#06b6d4] hover:bg-[#0d9488] text-white shadow-lg hover:shadow-xl transition-all px-8 py-3">
+              <mat-icon class="mr-2">visibility</mat-icon>
+              Ver Todos los Clientes
+            </button>
+            <button 
+              mat-stroked-button
+              (click)="createNewVisit()"
+              class="border-[#06b6d4] text-[#06b6d4] hover:bg-[#06b6d4] hover:bg-opacity-5 transition-colors px-8 py-3">
+              <mat-icon class="mr-2">person_add</mat-icon>
+              Crear Cliente
             </button>
           </div>
         </div>
-
-        <!-- Paginador -->
-        <mat-paginator
-          *ngIf="total() > pageSize()"
-          [length]="total()"
-          [pageIndex]="page() - 1"
-          [pageSize]="pageSize()"
-          [pageSizeOptions]="[10, 20, 50, 100]"
-          (page)="onPage($event)"
-          class="border-t border-gray-100 rounded-b-xl">
-        </mat-paginator>
-      </mat-card-content>
-    </mat-card>
-  </section>
+      </div>
+    </div>
+  </div>
   `,
   styles: [`
-    .custom-form-field .mat-form-field-flex {
-      border-radius: 12px;
-      padding: 0 12px;
-      background: white;
-      border: 1px solid #e5e7eb;
+    .patient-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .patient-card:hover { transform: translateY(-4px); }
+    .custom-search-field .mat-form-field-flex {
+      background: white !important;
+      border: 2px solid #e5e7eb !important;
+      border-radius: 12px !important;
+      padding: 0 !important;
       transition: all 0.3s ease;
     }
-    .custom-form-field .mat-form-field-flex:hover {
-      border-color: #06b6d4;
+    .custom-search-field .mat-form-field-flex:hover {
+      border-color: #06b6d4 !important;
       box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
     }
-    .custom-form-field .mat-form-field-flex:focus-within {
-      border-color: #06b6d4;
+    .custom-search-field .mat-form-field-flex:focus-within {
+      border-color: #06b6d4 !important;
       box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
     }
-    .table-header {
-      font-weight: 600;
-      color: #374151;
-      border-bottom: 2px solid #06b6d4;
-    }
-    .table-cell {
-      padding: 16px;
-      border-bottom: 1px solid #f3f4f6;
-    }
-    .status-dot-success {
-      background-color: #10b981;
-      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
-    }
-    .status-dot-warning {
-      background-color: #f59e0b;
-      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-      height: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #f1f5f9;
-      border-radius: 3px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #06b6d4;
-      border-radius: 3px;
+    .custom-search-field .mat-form-field-underline { display: none !important; }
+    .custom-search-field .mat-form-field-subscript-wrapper { display: none !important; }
+    .custom-primary-button { background-color: #06b6d4 !important; color: white !important; }
+    .custom-primary-button:hover { background-color: #0d9488 !important; }
+    .mat-autocomplete-panel {
+      border-radius: 12px !important;
+      margin-top: 8px !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+      border: 1px solid #e5e7eb !important;
     }
   `]
 })
@@ -411,139 +389,134 @@ export class ClientesPage {
   private pacApi = inject(PacientesService);
   private destroyRef = inject(DestroyRef);
 
-  form = this.fb.group({ 
-    term: ['', [Validators.minLength(2)]]
+  // TS (fragmento esencial)
+  open = false;
+  activeIndex = -1;
+  get activeOptionId() { return this.activeIndex >= 0 ? `option-${this.activeIndex}` : null; }
+
+  // Referencia al input (opcional)
+  inputEl!: HTMLInputElement;
+  // En ngAfterViewInit puedes asignarla con @ViewChild('search') o template ref
+
+
+  searchForm = this.fb.group({ 
+    searchTerm: ['', [Validators.minLength(2)]]
   });
 
   loading = signal(false);
-  sugeridos = signal<PacienteLite[]>([]);
-  rows = signal<PacienteGridItem[]>([]);
-  total = signal(0);
-  page = signal(1);
-  pageSize = signal(20);
-  showingSingle = signal(false);
-
-  cols = ['cliente', 'telefono', 'ultima', 'resta', 'ultimoPago', 'pendiente', 'actions'] as const;
+  suggestedPatients = signal<PacienteLite[]>([]);
+  allPatients = signal<PacienteGridItem[]>([]);
+  selectedPatient = signal<PacienteGridItem | null>(null);
+  
+  displayedPatients = computed(() => {
+    if (this.selectedPatient()) {
+      return [this.selectedPatient()!];
+    }
+    const searchTerm = this.searchForm.controls.searchTerm.value?.toLowerCase() || '';
+    const patients = this.allPatients();
+    if (!searchTerm) return patients;
+    return patients.filter(patient => 
+      patient.nombre.toLowerCase().includes(searchTerm) ||
+      patient.telefono?.includes(searchTerm) ||
+      patient.ocupacion?.toLowerCase().includes(searchTerm)
+    );
+  });
 
   constructor() {
-    // Autosuggest por nombre/teléfono
-    this.form.controls.term.valueChanges.pipe(
+    // 🔧 Búsqueda en tiempo real robusta: salir de vista individual al teclear y filtrar valores no-string
+    this.searchForm.controls.searchTerm.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
-      switchMap(v => (v && v.trim().length >= 2) ? this.pacApi.search(v.trim()) : of([])),
-      catchError(() => of([])),
+      tap(() => this.selectedPatient.set(null)),     // <- clave para no “quedarse” en detalle
+      filter((term: unknown) => typeof term === 'string'), // <- evita objetos del autocomplete
+      switchMap((term: string) => {
+        const q = term.trim();
+        if (q.length >= 2) {
+          return this.pacApi.search(q).pipe(catchError(() => of([])));
+        }
+        return of([]);
+      }),
       takeUntilDestroyed(this.destroyRef)
-    ).subscribe(list => this.sugeridos.set((list || []).slice(0, 8)));
+    ).subscribe(patients => {
+      this.suggestedPatients.set(patients.slice(0, 5));
+    });
 
-    // Carga inicial
-    this.loadPaged();
+    this.loadAllPatients();
   }
 
-  showResultsCount() {
-    return this.rows().length > 0 || (this.form.controls.term.value?.length ?? 0) >= 2;
-  }
-
-  loadPaged() {
+  loadAllPatients() {
     this.loading.set(true);
-    this.pacApi.query(this.page(), this.pageSize()).pipe(
+    this.pacApi.query(1, 1000).pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
-      next: (res: { page: number; pageSize: number; total: number; items: PacienteGridItem[] }) => {
-        this.processPaged(res);
+      next: (res) => {
+        this.allPatients.set(res.items || []);
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
     });
   }
 
-  private processPaged(res: { page: number; pageSize: number; total: number; items: PacienteGridItem[] }) {
-    this.page.set(res.page);
-    this.pageSize.set(res.pageSize);
-    this.rows.set(res.items);
-    this.total.set(res.total);
-    this.showingSingle.set(false);
-  }
-
-  selectSugerido(s: PacienteLite) {
-    this.loading.set(true);
-    this.pacApi.gridItem(s.id).pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: (item) => {
-        this.rows.set([item]);
-        this.total.set(1);
-        this.page.set(1);
-        this.showingSingle.set(true);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false)
-    });
-  }
-
-  buscarManual() {
-    const term = this.form.controls.term.value?.trim();
-    if (term && term.length >= 2) {
-      this.loading.set(true);
-      this.pacApi.search(term).pipe(
-        takeUntilDestroyed(this.destroyRef)
-      ).subscribe({
-        next: (items) => {
-          // const gridItems: PacienteGridItem[] = items.slice(0, 50).map(item => ({
-          //   ...item,
-          //   ultimaVisitaResta: item.ultimaVisitaResta ?? 0,
-          //   tieneOrdenPendiente: item.tieneOrdenPendiente ?? false,
-          //   ultimaVisitaACuenta: item.ultimaVisitaACuenta ?? 0
-          // }));
-          // this.rows.set(gridItems);
-          this.total.set(items.length);
-          this.page.set(1);
-          this.showingSingle.set(false);
-          this.loading.set(false);
-        },
-        error: () => this.loading.set(false)
-      });
+  onPatientSelected(patient: PacienteLite) {
+    // Cierra y limpia sugerencias para evitar “fantasmas”
+    this.suggestedPatients.set([]);
+    // Muestra el nombre sin disparar valueChanges
+    this.searchForm.controls.searchTerm.setValue(patient.nombre, { emitEvent: false });
+    // Activa vista individual
+    const fullPatient = this.allPatients().find(p => p.id === patient.id);
+    if (fullPatient) {
+      this.selectedPatient.set(fullPatient);
     }
   }
 
-  limpiar() {
-    this.form.reset({ term: '' });
-    this.sugeridos.set([]);
-    this.page.set(1);
-    this.loadPaged();
+  selectPatient(patient: PacienteGridItem) {
+    this.selectedPatient.set(patient);
+    this.suggestedPatients.set([]);
+    this.searchForm.controls.searchTerm.setValue(patient.nombre, { emitEvent: false });
   }
 
-  mostrarTodos() {
-    this.limpiar();
+  clearSelection() {
+    this.selectedPatient.set(null);
+    this.searchForm.controls.searchTerm.setValue('');
   }
 
-  onPage(e: PageEvent) {
-    if (this.showingSingle()) return;
-    this.page.set(e.pageIndex + 1);
-    this.pageSize.set(e.pageSize);
-    this.loadPaged();
+  // clearSearch() {
+  //   this.searchForm.controls.searchTerm.setValue('');
+  //   this.suggestedPatients.set([]);
+  //   this.selectedPatient.set(null);
+  // }
+
+  showAllPatients() {
+    this.clearSearch();
+    this.loadAllPatients();
   }
 
-  verHistorial(r: PacienteGridItem) {
-    this.router.navigate(['/clinica/historial', r.id]);
+  viewPatientHistory(patient: PacienteGridItem) {
+    this.router.navigate(['/clinica/historial', patient.id]);
   }
 
-  nuevaVisita(r?: PacienteGridItem) {
-    if (r) {
-      this.router.navigate(['/clinica/historia'], { queryParams: { pacienteId: r.id } });
+  createNewVisit(patient?: PacienteGridItem) {
+    if (patient) {
+      this.router.navigate(['/clinica/historia'], { queryParams: { pacienteId: patient.id } });
     } else {
-      this.router.navigate(['clinica/historia']);
+      this.router.navigate(['/clinica/historia']);
     }
   }
 
-  // Métodos de utilidad para clases dinámicas
-  getStatusDotClass(tieneOrdenPendiente: boolean): string {
-    return tieneOrdenPendiente ? 
-      'status-dot-warning' : 'status-dot-success';
+  onVerDetalleVisita(event: any) {
+    const visitaId = typeof event === 'string' ? event : event?.visitaId ?? '';
+    console.log('Ver detalle de visita:', visitaId);
   }
 
-  getStatusTextClass(tieneOrdenPendiente: boolean): string {
-    return tieneOrdenPendiente ? 
-      'text-amber-600' : 'text-green-600';
+  getStatusChipClass(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'Completado': 'bg-green-100 text-green-800',
+      'Pendiente': 'bg-amber-100 text-amber-800',
+      'Cancelado': 'bg-red-100 text-red-800',
+      'En Proceso': 'bg-blue-100 text-blue-800',
+      'Borrador': 'bg-gray-100 text-gray-800'
+    };
+    return statusMap[status] || 'bg-gray-100 text-gray-800';
   }
 
   getAmountClass(amount: number): string {
@@ -552,19 +525,39 @@ export class ClientesPage {
     return 'text-gray-500';
   }
 
-  getStatusChipClass(status: string): string {
-    const statusMap: { [key: string]: string } = {
-      'Completado': 'bg-green-100 text-green-800 border-green-200',
-      'Pendiente': 'bg-amber-100 text-amber-800 border-amber-200',
-      'Cancelado': 'bg-red-100 text-red-800 border-red-200',
-      'En Proceso': 'bg-blue-100 text-blue-800 border-blue-200'
-    };
-    return statusMap[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+  onKeydown(e: KeyboardEvent) {
+  const len = this.suggestedPatients().length;
+  if (!this.open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { this.open = true; }
+  switch (e.key) {
+    case 'ArrowDown':
+      if (len > 0) { this.activeIndex = (this.activeIndex + 1) % len; e.preventDefault(); }
+      break;
+    case 'ArrowUp':
+      if (len > 0) { this.activeIndex = (this.activeIndex - 1 + len) % len; e.preventDefault(); }
+      break;
+    case 'Enter':
+      if (this.open && this.activeIndex >= 0) {
+        const p = this.suggestedPatients()[this.activeIndex];
+        this.selectFromList(p);
+        e.preventDefault();
+      }
+      break;
+    case 'Escape':
+      this.open = false;
+      break;
   }
+}
 
-  onOptionSelected(paciente: PacienteLite) {
-    // Actualizar el control con el nombre, sin emitir evento para evitar una nueva búsqueda
-    this.form.controls.term.setValue(paciente.nombre, { emitEvent: false });
-    this.selectSugerido(paciente);
-  }
+selectFromList(p: PacienteLite) {
+  this.onPatientSelected(p);           // tu lógica existente
+  this.searchForm.controls.searchTerm.setValue(p.nombre, { emitEvent: false });
+  this.open = false;
+}
+
+clearSearch() {
+  this.searchForm.controls.searchTerm.setValue('');
+  this.suggestedPatients.set([]);
+  this.activeIndex = -1;
+  this.open = true; // opcional: deja el dropdown listo para nuevos resultados
+}
 }

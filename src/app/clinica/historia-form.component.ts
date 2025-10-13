@@ -434,6 +434,4 @@ agregarLenteContacto(lente: any) {
 quitarLenteContacto(index: number) {
   this.lentesContactoSel.splice(index, 1);
 }
-
-
 }
