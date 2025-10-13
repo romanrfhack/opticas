@@ -2,18 +2,24 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import {
-  CrearHistoriaRequest, EnviarLabRequest, PacienteLite, UltimaHistoriaItem
+  CrearHistoriaRequest, EnviarLabRequest, PacienteLite, UltimaHistoriaItem,
+  VisitaCompleta
 } from './models/clinica.models';
 import { VisitaDetalle } from '../clinica/visita-detalle.component';
+import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class HistoriasService {
   private http = inject(HttpClient);
   private base = environment.apiBaseUrl;
 
-  create(req: CrearHistoriaRequest) {
-    return this.http.post<{ id: string }>(`${this.base}/historias`, req);
-  }
+  // create(req: CrearHistoriaRequest) {
+  //   return this.http.post<{ id: string }>(`${this.base}/historias`, req);
+  // }
+
+  create(data: CrearHistoriaRequest): Observable<{ id: string }> {
+  return this.http.post<{ id: string }>(`${this.base}/historias`, data);
+}
 
   detalle(id: string) {
   return this.http.get<VisitaDetalle>(`${this.base}/visitas/${id}`);
@@ -65,5 +71,14 @@ export class HistoriasService {
     return this.http.get<{ page: number; pageSize: number; total: number; items: any[] }>(
       `${this.base}/pacientes/${pacienteId}/historial`, { params }
     ).toPromise();  
+  }
+
+  // Agregar estos métodos al servicio
+  getVisitaCompletaById(id: string): Observable<VisitaCompleta> {
+    return this.http.get<VisitaCompleta>(`${this.base}/${id}`);
+  }
+
+  getByPacienteId(pacienteId: string): Observable<UltimaHistoriaItem[]> {
+    return this.http.get<UltimaHistoriaItem[]>(`${this.base}/historias/paciente/${pacienteId}`);
   }
 }

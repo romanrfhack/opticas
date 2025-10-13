@@ -18,9 +18,10 @@ import { of } from 'rxjs';
 import { PacientesService } from '../core/pacientes.service';
 import { HistoriasService } from '../core/historias.service';
 import { MaterialesService } from '../core/materiales.service';
-import { AgudezaDto, CrearHistoriaRequest, LcDto, MaterialHistoriaDto, MaterialItem, PacienteItem, RxDto } from '../core/models/clinica.models';
+import { AgudezaDto, ArmazonDto, CrearHistoriaRequest, LcDto, MaterialDto, MaterialHistoriaDto, MaterialItem, PacienteItem, RxDto } from '../core/models/clinica.models';
 import { EnviarLabDialog } from './enviar-lab.dialog';
 import { UltimasVisitasComponent } from './ultimas-visitas.component';
+import { VisitaDetalleModalComponent } from './components/visita-detalle-modal.component';
 
 // Componentes hijos
 
@@ -224,55 +225,7 @@ quitarMaterial(index: number) {
 
   quitarLC(i: number) {
     this.lcSel.update(list => list.filter((_, idx) => idx !== i));
-  }
-
-  guardar() {
-    if (!this.pacienteId()) return;
-    this.loading.set(true);
-
-    const agudeza: AgudezaDto[] = [
-      { condicion: 'SinLentes', ojo: 'OD', denominador: this.avSinOD ?? 0 },
-      { condicion: 'SinLentes', ojo: 'OI', denominador: this.avSinOI ?? 0 },
-      { condicion: 'ConLentes', ojo: 'OD', denominador: this.avConOD ?? 0 },
-      { condicion: 'ConLentes', ojo: 'OI', denominador: this.avConOI ?? 0 }
-    ];    
-
-    const rx: RxDto[] = [
-      { ojo: 'OD', distancia: 'Lejos', esf: this.filasRx[0].esf, cyl: this.filasRx[0].cyl, eje: this.filasRx[0].eje, add: this.filasRx[0].add, dip: this.filasRx[0].dip, altOblea: this.filasRx[0].altOblea },
-      { ojo: 'OI', distancia: 'Lejos', esf: this.filasRx[1].esf, cyl: this.filasRx[1].cyl, eje: this.filasRx[1].eje, add: this.filasRx[1].add, dip: this.filasRx[1].dip, altOblea: this.filasRx[1].altOblea },
-      { ojo: 'OD', distancia: 'Cerca', esf: this.filasRx[2].esf, cyl: this.filasRx[2].cyl, eje: this.filasRx[2].eje, add: this.filasRx[2].add, dip: this.filasRx[2].dip, altOblea: this.filasRx[2].altOblea },
-      { ojo: 'OI', distancia: 'Cerca', esf: this.filasRx[3].esf, cyl: this.filasRx[3].cyl, eje: this.filasRx[3].eje, add: this.filasRx[3].add, dip: this.filasRx[3].dip, altOblea: this.filasRx[3].altOblea },
-    ];
-
-    const req: CrearHistoriaRequest = {
-      pacienteId: this.pacienteId()!,
-      av: agudeza,
-      rx: rx,
-      materiales: this.materialesSel().map(m => ({
-        materialId: m.id,
-        observaciones: m.observaciones
-      })),
-      
-      lentesContacto: this.lcSel(),
-      observaciones: this.observaciones,
-      armazones: [] // Agrega aquí los armazones, o un array vacío si no hay
-    };
-
-    this.hisApi.create(req).pipe(
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe({
-      next: (res) => {
-        this.historiaId.set(res.id);
-        this.snack.open('Historia guardada exitosamente', 'Cerrar', { duration: 3000 });
-        this.loading.set(false);
-      },
-      error: (err) => {
-        console.error(err);
-        this.snack.open('Error al guardar historia', 'Cerrar', { duration: 3000 });
-        this.loading.set(false);
-      }
-    });
-  }
+  } 
 
   abrirEnviarLab() {
     if (!this.historiaId()) return;
@@ -294,56 +247,164 @@ onLentesContactoChange(lentes: any[]) {
 }
 
 
-// En historia-form.component.ts, actualizar el guardarBorrador:
+// Método guardar() actualizado
+guardar() {
+  if (!this.pacienteId()) return;
+  this.loading.set(true);
+
+  // Mapear agudeza visual al formato del backend
+  const agudeza: AgudezaDto[] = [
+    { Condicion: 'SinLentes', Ojo: 'OD', Denominador: this.avSinOD ?? 0 },
+    { Condicion: 'SinLentes', Ojo: 'OI', Denominador: this.avSinOI ?? 0 },
+    { Condicion: 'ConLentes', Ojo: 'OD', Denominador: this.avConOD ?? 0 },
+    { Condicion: 'ConLentes', Ojo: 'OI', Denominador: this.avConOI ?? 0 }
+  ];    
+
+  // Mapear RX al formato del backend
+  const rx: RxDto[] = this.filasRx.map(fila => ({
+    Ojo: fila.ojo,
+    Distancia: fila.dist,
+    Esf: fila.esf,
+    Cyl: fila.cyl,
+    Eje: fila.eje,
+    Add: fila.add,
+    Dip: fila.dip?.toString(), // Asegurar que sea string
+    AltOblea: fila.altOblea
+  }));
+
+  // Mapear materiales al formato del backend
+  const materiales: MaterialDto[] = this.materialesSel().map(m => ({
+    materialId: m.id,
+    observaciones: m.observaciones || null
+  }));
+
+  // Mapear armazones al formato del backend
+  const armazones: ArmazonDto[] = this.armazonesSel.map(a => ({
+    productoId: a.productoId || a.id,
+    observaciones: a.observaciones || null
+  }));
+
+  // Mapear lentes de contacto al formato del backend
+  const lentesContacto: LcDto[] = this.lentesContactoSel.map(lc => ({
+    tipo: lc.tipo,
+    marca: lc.marca || null,
+    modelo: lc.modelo || null,
+    observaciones: lc.observaciones || null
+  }));
+
+  const req: CrearHistoriaRequest = {
+    pacienteId: this.pacienteId()!,
+    observaciones: this.observaciones,
+    av: agudeza,
+    rx: rx,
+    materiales: materiales,
+    armazones: armazones,
+    lentesContacto: lentesContacto
+  };
+
+  console.log('📤 Enviando al backend:', req);
+
+  this.hisApi.create(req).pipe(
+    takeUntilDestroyed(this.destroyRef)
+  ).subscribe({
+    next: (res) => {
+      this.historiaId.set(res.id);
+      this.snack.open('Historia guardada exitosamente', 'Cerrar', { duration: 3000 });
+      this.loading.set(false);
+    },
+    error: (err) => {
+      console.error('❌ Error al guardar historia:', err);
+      this.snack.open('Error al guardar historia', 'Cerrar', { duration: 3000 });
+      this.loading.set(false);
+    }
+  });
+}
+
+// Método guardarBorrador() también necesita actualizarse para usar la misma estructura
 guardarBorrador() {
   if (!this.pacienteId()) {
     console.error('No hay paciente seleccionado');
     return;
   }
 
-  // Debug: ver qué tenemos en armazonesSel
-  console.log('🔍 Debug - armazonesSel completo:', this.armazonesSel);
-  console.log('🔍 Debug - primer armazón:', this.armazonesSel[0]);
+  // Usar la misma estructura que el método guardar() para consistencia
+  const agudeza: AgudezaDto[] = [
+    { Condicion: 'SinLentes', Ojo: 'OD', Denominador: this.avSinOD ?? 0 },
+    { Condicion: 'SinLentes', Ojo: 'OI', Denominador: this.avSinOI ?? 0 },
+    { Condicion: 'ConLentes', Ojo: 'OD', Denominador: this.avConOD ?? 0 },
+    { Condicion: 'ConLentes', Ojo: 'OI', Denominador: this.avConOI ?? 0 }
+  ];
 
-  // Preparar los datos para guardar
+  const rx: RxDto[] = this.filasRx.map(fila => ({
+    Ojo: fila.ojo,
+    Distancia: fila.dist,
+    Esf: fila.esf,
+    Cyl: fila.cyl,
+    Eje: fila.eje,
+    Add: fila.add,
+    Dip: fila.dip?.toString(),
+    AltOblea: fila.altOblea
+  }));
+
+  const materiales: MaterialDto[] = this.materialesSel().map(m => ({
+    materialId: m.id,
+    observaciones: m.observaciones || null
+  }));
+
+  const armazones: ArmazonDto[] = this.armazonesSel.map(a => ({
+    productoId: a.productoId || a.id,
+    observaciones: a.observaciones || null
+  }));
+
+  const lentesContacto: LcDto[] = this.lentesContactoSel.map(lc => ({
+    tipo: lc.tipo,
+    marca: lc.marca || null,
+    modelo: lc.modelo || null,
+    observaciones: lc.observaciones || null
+  }));
+
   const datosHistoria = {
     pacienteId: this.pacienteId(),
-    agudezaVisual: {
+    agudezaVisual: { // Mantener esto para debug interno si quieres
       sinOD: this.avSinOD,
       sinOI: this.avSinOI,
       conOD: this.avConOD,
       conOI: this.avConOI
     },
-    prescripcion: this.filasRx,
-    materiales: this.materialesSel().map(m => {
-      console.log('📦 Procesando material para guardar:', m);
-      return {
-        id: m.id,
-        descripcion: m.descripcion,
-        marca: m.marca,
-        observaciones: m.observaciones || '' // ✅ Esto debería capturar las observaciones
-      };
-    }),
-    armazones: this.armazonesSel.map(a => {
-      // Intentar diferentes formas de obtener el ID
-      const productoId = a.id || a.productoId || 'ID_NO_ENCONTRADO';
-      console.log('🔍 Procesando armazón:', a, '-> productoId:', productoId);
-      
-      return {
-        productoId: productoId,
-        observaciones: a.observaciones || ''
-      };
-    }),
+    prescripcion: this.filasRx, // Mantener para debug
+    materiales: this.materialesSel().map(m => ({
+      id: m.id,
+      descripcion: m.descripcion,
+      marca: m.marca,
+      observaciones: m.observaciones || ''
+    })),
+    armazones: this.armazonesSel.map(a => ({
+      productoId: a.productoId || a.id,
+      observaciones: a.observaciones || ''
+    })),
     lentesContacto: this.lentesContactoSel,
     observaciones: this.observaciones,
-    fecha: new Date().toISOString()
+    fecha: new Date().toISOString(),
+    
+    // Datos para el backend (para cuando implementes el servicio real)
+    backendData: {
+      pacienteId: this.pacienteId()!,
+      observaciones: this.observaciones,
+      av: agudeza,
+      rx: rx,
+      materiales: materiales,
+      armazones: armazones,
+      lentesContacto: lentesContacto
+    } as CrearHistoriaRequest
   };
 
   console.log('=== GUARDANDO BORRADOR ===');
-  console.log('📋 Datos completos del borrador:');
-  console.log(JSON.stringify(datosHistoria, null, 2));
+  console.log('📋 Datos para el backend:', datosHistoria.backendData);
+  console.log('============================');
   
-  alert('Borrador guardado exitosamente');
+  // Por ahora solo mostramos un mensaje
+  this.guardar();
+  //alert('Borrador guardado exitosamente');
 }
 
 // Método para registrar pago/adelanto

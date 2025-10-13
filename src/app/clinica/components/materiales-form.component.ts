@@ -14,7 +14,9 @@ import {
   ProductDto, 
   ArmazonHistoriaDto,
   MaterialHistoriaDto, 
-  ArmazonesDto
+  ArmazonesDto,
+  ArmazonDto,
+  MaterialDto
 } from '../../core/models/clinica.models';
 import { ProductosService } from '../../core/productos.service';
 
@@ -365,33 +367,40 @@ export class MaterialesFormComponent implements OnInit {
     this.materialSelIdChange.emit(this.materialSelId);
   }
 
-  agregarMaterialHandler() {
+  // Asegurarnos de que los métodos emitan los datos en el formato correcto
+
+// En agregarMaterialHandler()
+agregarMaterialHandler() {
   if (!this.materialSelId) return;
 
-  // Encontrar el material seleccionado
   const materialSeleccionado = this.materiales.find(m => m.id === this.materialSelId);
   if (!materialSeleccionado) return;
 
-  console.log('🔧 Agregando material:', materialSeleccionado);
-  console.log('📝 Observaciones del material:', this.materialObs);
-
-  // Crear el objeto para emitir - INCLUYENDO OBSERVACIONES
-  const materialHistoria: MaterialHistoriaDto = {
+  // Crear el objeto en formato MaterialDto
+  const materialHistoria: MaterialDto = {
     materialId: this.materialSelId,
-    observaciones: this.materialObs || null // ✅ Asegurar que se incluyan las observaciones
+    observaciones: this.materialObs || null
   };
 
-  // Emitir el evento al componente padre
+  // Emitir al componente padre
   this.agregarMaterial.emit(materialHistoria);
 
   // También agregar localmente para mostrar en la lista
   this.materialesSel.push({
     ...materialSeleccionado,
-    observaciones: this.materialObs // ✅ Esto ya lo tienes bien
+    observaciones: this.materialObs
   });
 
-  // Limpiar selección
   this.limpiarMaterial();
+}
+
+// En emitArmazones() - asegurarnos de usar ArmazonDto
+private emitArmazones() {
+  const armazonesParaHistoria: ArmazonDto[] = this.armazonesSel.map(armazon => ({
+    productoId: armazon.id, // Esto viene de ArmazonesDto
+    observaciones: armazon.observaciones || null
+  }));
+  this.armazonesChange.emit(armazonesParaHistoria);
 }
 
   quitarMaterialHandler(index: number) {
@@ -488,22 +497,22 @@ export class MaterialesFormComponent implements OnInit {
     this.lenteContactoObs = '';
   }  
 
-  private emitArmazones() {
-  console.log('🔄 Emitiendo armazones:', this.armazonesSel);
+//   private emitArmazones() {
+//   console.log('🔄 Emitiendo armazones:', this.armazonesSel);
   
-  const armazonesParaHistoria = this.armazonesSel.map(armazon => {
-    // Asegurarnos de que tenemos el ID correcto
-    const armazonData = {
-      productoId: armazon.id, // Intentar ambos
-      observaciones: armazon.observaciones || null
-    };
-    console.log('📦 Procesando armazón:', armazon, '->', armazonData);
-    return armazonData;
-  });
+//   const armazonesParaHistoria = this.armazonesSel.map(armazon => {
+//     // Asegurarnos de que tenemos el ID correcto
+//     const armazonData = {
+//       productoId: armazon.id, // Intentar ambos
+//       observaciones: armazon.observaciones || null
+//     };
+//     console.log('📦 Procesando armazón:', armazon, '->', armazonData);
+//     return armazonData;
+//   });
   
-  console.log('📤 Armazones para emitir:', armazonesParaHistoria);
-  this.armazonesChange.emit(armazonesParaHistoria);
-}
+//   console.log('📤 Armazones para emitir:', armazonesParaHistoria);
+//   this.armazonesChange.emit(armazonesParaHistoria);
+// }
 
   mostrarArmazon(armazon: ArmazonesDto | string): string {
     if (!armazon) return '';

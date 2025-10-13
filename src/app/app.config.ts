@@ -6,6 +6,13 @@ import { authInterceptor } from './auth/auth.interceptor';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { MAT_RIPPLE_GLOBAL_OPTIONS } from '@angular/material/core';
 
+// Importar el locale español
+import { registerLocaleData } from '@angular/common';
+import localeEs from '@angular/common/locales/es';
+
+// Registrar el locale español
+registerLocaleData(localeEs);
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(
