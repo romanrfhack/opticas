@@ -3,7 +3,7 @@ export type RxDistancia = 'Lejos' | 'Cerca';
 export type CondicionAV = 'SinLentes' | 'ConLentes';
 export type TipoLenteContacto = 'Esferico' | 'Torico' | 'Otro';
 export type MetodoPago = 'Efectivo' | 'Tarjeta' | 'Transferencia';
-export type EstadoHistoria = 'Borrador' | 'EnviadoLaboratorio' | 'Recibido' | 'Entregado' | 'Cancelado';
+export type EstadoHistoria = 'Guardado' | 'EnviadoLaboratorio' | 'Recibido' | 'Entregado' | 'Cancelado';
 
 // Interface única para crear historia
 export interface CrearHistoriaRequest {

@@ -417,8 +417,29 @@ registrarPagoAdelanto() {
   console.log('Abriendo modal de pago/adelanto para historia:', this.historiaId());
   
   // Aquí abrirías el modal de pago/adelanto
-  // this.abrirModalPago();
+  // this.abrirModalPago();  
+  this.abrirEnviarLab();
 }
+
+// abrirEnviarLab() {
+//     if (!this.historiaId()) return;
+//     const ref = this.dialog.open(EnviarLabDialog, { width: '720px' });
+//     ref.afterClosed().subscribe(data => {
+//       if (!data) return;
+//       this.loading.set(true);
+//       this.hisApi.enviarALab(this.historiaId()!, {
+//         total: +data.total,
+//         pagos: (data.pagos || []).map((p: any) => ({
+//           metodo: p.metodo, monto: +p.monto, autorizacion: p.autorizacion || null, nota: p.nota || null
+//         })),
+//         fechaEstimadaEntrega: data.fechaEstimadaEntrega || null
+//       }).subscribe({
+//         next: () => this.snack.open('Orden enviada a laboratorio', 'OK', { duration: 2000 }),
+//         error: () => this.snack.open('Error al enviar a laboratorio', 'OK', { duration: 2500 }),
+//         complete: () => this.loading.set(false)
+//       });
+//     });
+//   }
 
 // Método para manejar cambios en armazones (si no lo tienes)
 onArmazonesChange(armazones: any[]) {

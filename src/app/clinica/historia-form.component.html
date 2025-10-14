@@ -88,12 +88,19 @@
                       [disabled]="!pacienteId()"
                       class="save-button flex-1 py-3">
                 <mat-icon>save</mat-icon>
-                Guardar Borrador
+                Guardar Visita
               </button>
-              <button mat-flat-button 
+              <!-- <button mat-flat-button 
                       color="accent" 
                       (click)="registrarPagoAdelanto()" 
                       [disabled]="!historiaId()"
+                      class="payment-button flex-1 py-3">
+                <mat-icon>payments</mat-icon>
+                Registrar pago / adelanto
+              </button> -->
+              <button mat-flat-button 
+                      color="accent" 
+                      (click)="registrarPagoAdelanto()"                       
                       class="payment-button flex-1 py-3">
                 <mat-icon>payments</mat-icon>
                 Registrar pago / adelanto

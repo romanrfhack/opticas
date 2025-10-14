@@ -21,103 +21,15 @@ export interface EnviarLabData {
   standalone: true,
   selector: 'app-enviar-lab-dialog',
   imports: [
-    CommonModule, ReactiveFormsModule, 
+    CommonModule, // <-- This ensures *ngIf and other common directives are available
+    ReactiveFormsModule, 
     MatDialogModule, MatFormFieldModule, MatInputModule, 
     MatSelectModule, MatButtonModule, MatIconModule, MatCardModule
   ],
   template: `
-  <div class="p-6 max-w-4xl mx-auto">
-    <!-- Header -->
-    <div class="flex items-center gap-3 mb-4">
-      <mat-icon class="text-primary text-2xl">send</mat-icon>
-      <div>
-        <h2 class="text-xl font-bold text-gray-800">Enviar a Laboratorio</h2>
-        <p class="text-sm text-gray-600" *ngIf="data?.pacienteNombre || data?.productoNombre">
-          <ng-container *ngIf="data?.pacienteNombre">
-            <span class="font-medium">Paciente:</span> {{ data.pacienteNombre }}
-          </ng-container>
-          <ng-container *ngIf="data?.pacienteNombre && data?.productoNombre"> • </ng-container>
-          <ng-container *ngIf="data?.productoNombre">
-            <span class="font-medium">Producto:</span> {{ data.productoNombre }}
-          </ng-container>
-        </p>
-      </div>
-    </div>
+  <div class="p-6 max-w-4xl mx-auto">    
 
-    <form [formGroup]="form" class="space-y-6" (ngSubmit)="ok()">
-      <!-- Información del Laboratorio -->
-      <mat-card class="form-card">
-        <mat-card-header class="border-b border-gray-100 pb-4 mb-4">
-          <mat-card-title class="flex items-center gap-2 text-lg font-semibold">
-            <mat-icon class="text-primary">business</mat-icon>
-            Información del Laboratorio
-          </mat-card-title>
-        </mat-card-header>
-        
-        <mat-card-content>
-          <div class="grid md:grid-cols-2 gap-6">
-            <mat-form-field appearance="fill" class="w-full custom-form-field">
-              <mat-label>Laboratorio</mat-label>
-              <input matInput formControlName="laboratorio" placeholder="Nombre del laboratorio" required />
-              <mat-icon matPrefix class="prefix-icon">apartment</mat-icon>
-              <mat-error *ngIf="form.controls.laboratorio.hasError('required')">Campo requerido</mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="fill" class="w-full custom-form-field">
-              <mat-label>Servicio</mat-label>
-              <mat-select formControlName="servicio" required>
-                <mat-option value="Mica">Mica</mat-option>
-                <mat-option value="Armazón">Armazón</mat-option>
-                <mat-option value="Montaje">Montaje</mat-option>
-                <mat-option value="Otro">Otro</mat-option>
-              </mat-select>
-              <mat-icon matPrefix class="prefix-icon">build</mat-icon>
-              <mat-error *ngIf="form.controls.servicio.hasError('required')">Campo requerido</mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="fill" class="w-full md:col-span-2 custom-form-field">
-              <mat-label>Indicaciones / Observaciones</mat-label>
-              <textarea matInput formControlName="indicaciones" maxlength="300" 
-                        placeholder="Detalles técnicos, color, acabado, etc." rows="2"></textarea>
-              <mat-icon matPrefix class="prefix-icon">notes</mat-icon>
-            </mat-form-field>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <!-- Información Adicional -->
-      <mat-card class="form-card">
-        <mat-card-header class="border-b border-gray-100 pb-4 mb-4">
-          <mat-card-title class="flex items-center gap-2 text-lg font-semibold">
-            <mat-icon class="text-primary">schedule</mat-icon>
-            Información Adicional
-          </mat-card-title>
-        </mat-card-header>
-        
-        <mat-card-content>
-          <div class="grid md:grid-cols-3 gap-6">
-            <mat-form-field appearance="fill" class="w-full custom-form-field">
-              <mat-label>Fecha promesa de entrega</mat-label>
-              <input matInput type="date" formControlName="fechaPromesa" />
-              <mat-icon matPrefix class="prefix-icon">event</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="fill" class="w-full custom-form-field">
-              <mat-label>Referencia externa</mat-label>
-              <input matInput formControlName="referenciaExterna" placeholder="Número de referencia" />
-              <mat-icon matPrefix class="prefix-icon">tag</mat-icon>
-            </mat-form-field>
-
-            <mat-form-field appearance="fill" class="w-full custom-form-field">
-              <mat-label>Costo estimado</mat-label>
-              <input matInput type="number" formControlName="costo" min="0" step="0.01" placeholder="0.00" />
-              <mat-icon matPrefix class="prefix-icon">attach_money</mat-icon>
-              <mat-error *ngIf="form.controls.costo?.hasError('min')">El costo no puede ser negativo</mat-error>
-            </mat-form-field>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
+    <form [formGroup]="form" class="space-y-6" (ngSubmit)="ok()">      
       <!-- Resumen de Total -->
       <div *ngIf="data?.total as t" class="bg-blue-50 rounded-lg p-4 border border-blue-200">
         <div class="flex items-center justify-between">
