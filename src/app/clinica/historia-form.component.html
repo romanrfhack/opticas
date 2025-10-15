@@ -1,6 +1,10 @@
 <div class="max-w-7xl mx-auto space-y-8 p-4 dashboard-container">
   
   <mat-progress-bar mode="indeterminate" *ngIf="loading()" class="rounded-full"></mat-progress-bar>
+  <mat-progress-bar mode="indeterminate" *ngIf="cargandoPacienteDesdeUrl()" class="rounded-full bg-blue-500"></mat-progress-bar>
+  <div *ngIf="cargandoPacienteDesdeUrl()" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+  <div class="flex items-center gap-3">  <mat-spinner diameter="24"></mat-spinner> <span class="text-blue-700 font-medium">Cargando paciente...</span> </div>
+</div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
     <!-- Col 1-2: Formulario principal -->

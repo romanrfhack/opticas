@@ -3,11 +3,15 @@ import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { VisitaCompleta } from '../../core/models/clinica.models';
+import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { EnviarLabDialog } from '../enviar-lab.dialog';
+
 
 @Component({
   standalone: true,
   selector: 'app-visita-detalle-modal',
-  imports: [CommonModule, MatDialogModule, MatIconModule],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatSnackBarModule ],
   template: `
     <div class="modal-container   rounded-2xl shado xl max-h-[95vh] overflow-hidden flex flex-col">
 
@@ -57,29 +61,42 @@ import { VisitaCompleta } from '../../core/models/clinica.models';
           <div class="flex flex-wrap gap-6 no-scrollbar">
             <!-- RESUMEN -->
              
-            <section id="resumen" class="grid-item">
-              <div class="flex flex-wrap gap-4 bg-[#06b6d4]/10 p-3 rounded-lg mb-4">
-                  <mat-icon class="section-icon">remove_red_eye</mat-icon>
-                  <h2 class="section-title">Pagos</h2>
-                </div>
-              <div class="content-card content-section">
-                
-                <div class="grid grid-cols-3    ">
-                  <div class="kpi-item">
-                    <div class="kpi-label">Total</div>
-                    <div class="kpi-value">{{ data.total | currency }}</div>
-                  </div>
-                  <div class="kpi-item">
-                    <div class="kpi-label">A cuenta</div>
-                    <div class="kpi-value text-emerald-600">{{ data.aCuenta | currency }}</div>
-                  </div>
-                  <div class="kpi-item">
-                    <div class="kpi-label">Resta</div>
-                    <div class="kpi-value" [class]="getRestaColorClass()">{{ data.resta | currency }}</div>
-                  </div>
-                </div>
-              </div>
-            </section>
+            <!-- En la sección de RESUMEN/Pagos -->
+<section id="resumen" class="grid-item">
+  <div class="flex flex-wrap gap-4 bg-[#06b6d4]/10 p-3 rounded-lg mb-4">
+    <mat-icon class="section-icon">remove_red_eye</mat-icon>
+    <h2 class="section-title">Pagos</h2>
+  </div>
+  <div class="content-card content-section">
+    
+    <!-- Botón para agregar pago -->
+    <div class="mb-4 flex justify-end">
+      <button mat-flat-button 
+              color="primary" 
+              (click)="registrarPago()"
+              [disabled]="!data.resta || data.resta <= 0"
+              class="save-button">
+        <mat-icon>add_circle</mat-icon>
+        {{ (data.resta && data.resta > 0) ? 'Agregar Pago' : 'Pagado Completamente' }}
+      </button>
+    </div>
+
+    <div class="grid grid-cols-3">
+      <div class="kpi-item">
+        <div class="kpi-label">Total</div>
+        <div class="kpi-value">{{ data.total | currency }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">A cuenta</div>
+        <div class="kpi-value text-emerald-600">{{ data.aCuenta | currency }}</div>
+      </div>
+      <div class="kpi-item">
+        <div class="kpi-label">Resta</div>
+        <div class="kpi-value" [class]="getRestaColorClass()">{{ data.resta | currency }}</div>
+      </div>
+    </div>
+  </div>
+</section>
 
             <!-- AGUDEZA VISUAL -->
             <section id="av" class="grid-item">
@@ -403,7 +420,9 @@ import { VisitaCompleta } from '../../core/models/clinica.models';
   `]
 })
 export class VisitaDetalleModalComponent {
-  private dialogRef = inject(MatDialogRef<VisitaDetalleModalComponent>);
+  private dialogRef = inject(MatDialogRef<VisitaDetalleModalComponent>);  
+  private dialog = inject(MatDialog);
+  private snackBar = inject(MatSnackBar);
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: VisitaCompleta) {}
 
@@ -435,4 +454,35 @@ export class VisitaDetalleModalComponent {
     };
     return map[estado] ?? 'bg-gray-400';
   }
+
+  // En visita-detalle-modal.component.ts
+registrarPago() {
+  // Usamos el id de la visita (historiaId) y la resta como total pendiente
+  const dialogRef = this.dialog.open(EnviarLabDialog, {      
+    maxWidth: '100vw',               
+    panelClass: [
+      'w-full', 'sm:w-11/12', 'md:w-4/5', 'max-w-screen-xl'
+    ],
+    data: { 
+      historiaId: this.data.id, // Asegúrate de que `id` es el identificador de la visita
+      total: this.data.resta // Usamos la resta como total pendiente
+    }
+  });
+
+  dialogRef.afterClosed().subscribe(resultado => {
+    if (resultado?.success) {
+      console.log('✅ Pagos registrados exitosamente:', resultado.pagos);
+      console.log('💰 Total pagado:', resultado.totalPagado);
+      
+      // Podemos mostrar un mensaje de éxito
+      this.snackBar.open('Pagos registrados correctamente', 'Cerrar', { 
+        duration: 3000,
+        panelClass: ['bg-green-500', 'text-white']
+      });
+
+      // Aquí podrías recargar los datos de la visita si es necesario
+      // this.recargarVisita();
+    }
+  });
+}
 }

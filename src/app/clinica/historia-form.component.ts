@@ -28,6 +28,8 @@ import { RxFormComponent } from './components/rx-form.component';
 import { MaterialesFormComponent } from './components/materiales-form.component';
 import { PacienteCardComponent } from './components/paciente-card.component';
 import { PacienteFormComponent } from './components/paciente-form.component';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   standalone: true,
@@ -35,7 +37,7 @@ import { PacienteFormComponent } from './components/paciente-form.component';
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
     MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule,
-    MatAutocompleteModule, MatSelectModule, MatDialogModule, 
+    MatAutocompleteModule, MatSelectModule, MatDialogModule, MatProgressSpinnerModule,
     MatSnackBarModule, MatProgressBarModule, MatCardModule,    
     // Componentes hijos
     PacienteFormComponent,
@@ -58,6 +60,12 @@ export class HistoriaFormComponent implements OnInit {
   observaciones: string = '';
 
   loading = signal(false);
+
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  cargandoPacienteDesdeUrl = signal(false);
+
 
   // Paciente
   pacForm = this.fb.group({
@@ -108,6 +116,8 @@ export class HistoriaFormComponent implements OnInit {
   precioServicios = 0;
   precioConsulta = 0;
 
+
+
   ngOnInit() {    
     this.pacForm.controls.nombre.valueChanges.pipe(
       debounceTime(250),
@@ -125,8 +135,41 @@ export class HistoriaFormComponent implements OnInit {
       next: (list) => this.materiales.set(list || []),
       error: () => this.materiales.set([])
     });    
-  }  
+  this.route.queryParams.pipe(
+    takeUntilDestroyed(this.destroyRef)
+  ).subscribe(params => {
+    const pacienteIdFromUrl = params['pacienteId'];
+    if (pacienteIdFromUrl && !this.pacienteId()) {
+      this.cargarPacienteDesdeUrl(pacienteIdFromUrl);
+    }
+  });
+}  
 
+// Actualiza el método cargarPacienteDesdeUrl
+cargarPacienteDesdeUrl(pacienteId: string) {
+  this.cargandoPacienteDesdeUrl.set(true);
+  this.pacApi.getById(pacienteId).pipe(
+    takeUntilDestroyed(this.destroyRef)
+  ).subscribe({
+    next: (paciente) => {
+      if (paciente) {
+        this.selectPaciente(paciente);
+        this.snack.open(`Paciente ${paciente.nombre} cargado automáticamente`, 'Cerrar', { 
+          duration: 3000,
+          panelClass: ['bg-green-500', 'text-white']
+        });
+      } else {
+        this.snack.open('Paciente no encontrado', 'Cerrar', { duration: 3000 });
+      }
+      this.cargandoPacienteDesdeUrl.set(false);
+    },
+    error: (err) => {
+      console.error('Error al cargar paciente desde URL:', err);
+      this.snack.open('Error al cargar el paciente', 'Cerrar', { duration: 3000 });
+      this.cargandoPacienteDesdeUrl.set(false);
+    }
+  });
+}
   selectPaciente(p: PacienteItem) {
     this.pacienteId.set(p.id);
     this.pacForm.patchValue({
@@ -135,6 +178,12 @@ export class HistoriaFormComponent implements OnInit {
       telefono: p.telefono,
       ocupacion: p.ocupacion,
       direccion: p.direccion || ''
+    });
+    // Opcional: Limpiar el query parameter después de cargar
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { pacienteId: null },
+      queryParamsHandling: 'merge'
     });
   }
 
@@ -284,7 +333,8 @@ guardar() {
     rx: rx,
     materiales: materiales,
     armazones: armazones,
-    lentesContacto: lentesContacto
+    lentesContacto: lentesContacto,
+    total: this.totalACobrar
   };
 
   console.log('📤 Enviando al backend:', req);

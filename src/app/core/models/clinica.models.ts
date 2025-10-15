@@ -13,7 +13,8 @@ export interface CrearHistoriaRequest {
   rx: RxDto[];
   materiales: MaterialDto[];
   lentesContacto: LcDto[];
-  armazones: ArmazonDto[]; // ✅ NUEVO
+  armazones: ArmazonDto[];
+  total: number;
 }
 
 export interface AgudezaDto {
