@@ -5,6 +5,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './auth/auth.interceptor';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { MAT_RIPPLE_GLOBAL_OPTIONS } from '@angular/material/core';
+import { provideNgxMask } from 'ngx-mask';
 
 // Importar el locale español
 import { registerLocaleData } from '@angular/common';
@@ -15,6 +16,7 @@ registerLocaleData(localeEs);
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideNgxMask(), // Proveedor para NgxMask
     provideRouter(
       routes,
       withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' })

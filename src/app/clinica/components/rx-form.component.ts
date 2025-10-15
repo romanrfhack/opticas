@@ -69,7 +69,7 @@ import { MatIconModule } from '@angular/material/icon';
                          [(ngModel)]="r.esf" 
                          (ngModelChange)="onEsfChange(r, $event)"
                          [class.error]="hasError(r, 'esf')"
-                         placeholder="0.00"
+                         placeholder="-20 a +20"
                          title="Esfera: -20 a +20">
                 </td>
                 
@@ -81,7 +81,7 @@ import { MatIconModule } from '@angular/material/icon';
                          [(ngModel)]="r.cyl" 
                          (ngModelChange)="onCylChange(r, $event)"
                          [class.error]="hasError(r, 'cyl')"
-                         placeholder="0.00"
+                         placeholder="-10 a +10"
                          title="Cilindro: -10 a +10">
                 </td>
                 
@@ -92,7 +92,7 @@ import { MatIconModule } from '@angular/material/icon';
                          [(ngModel)]="r.eje" 
                          (ngModelChange)="onEjeChange(r, $event)"
                          [class.error]="hasError(r, 'eje')"
-                         placeholder="0"
+                         placeholder="0 a 180"
                          title="Eje: 0 a 180">
                 </td>
                 
@@ -104,7 +104,7 @@ import { MatIconModule } from '@angular/material/icon';
                          [(ngModel)]="r.add" 
                          (ngModelChange)="onAddChange(r, $event)"
                          [class.error]="hasError(r, 'add')"
-                         placeholder="0.00"
+                         placeholder="1 a 9"
                          title="ADD: 1 a 9">
                 </td>
                 
@@ -126,7 +126,7 @@ import { MatIconModule } from '@angular/material/icon';
                          [(ngModel)]="r.altOblea" 
                          (ngModelChange)="onAltObleaChange(r, $event)"
                          [class.error]="hasError(r, 'altOblea')"
-                         placeholder="0"
+                         placeholder="10 a 25"
                          title="ALT. OBLEA: 10 a 25">
                 </td>
               </tr>

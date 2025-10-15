@@ -9,27 +9,47 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { NgxMaskDirective } from 'ngx-mask';
+
+// Agregar el servicio
+import { HistoriasService } from '../core/historias.service';
 
 export interface EnviarLabData {
-  ordenId?: string;
-  pacienteNombre?: string;
-  productoNombre?: string;
+  historiaId: string;
   total?: number;
+}
+
+export interface PagoRequest {
+  metodo: string;
+  monto: number;
+  autorizacion?: string;
+  nota?: string;
 }
 
 @Component({
   standalone: true,
   selector: 'app-enviar-lab-dialog',
   imports: [
-    CommonModule, // <-- This ensures *ngIf and other common directives are available
+    CommonModule,
     ReactiveFormsModule, 
     MatDialogModule, MatFormFieldModule, MatInputModule, 
-    MatSelectModule, MatButtonModule, MatIconModule, MatCardModule
+    MatSelectModule, MatButtonModule, MatIconModule, MatCardModule,    
+    NgxMaskDirective,
+    MatProgressBarModule // Agregar para el loading
   ],
   template: `
-  <div class="p-6 max-w-4xl mx-auto">    
+  <div class="p-6 w-full">
+    <form [formGroup]="form" class="p-6 w-full" (ngSubmit)="registrarPagos()">
+      
+      <!-- Loading State -->
+      <div *ngIf="procesando()" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+          <mat-progress-bar mode="indeterminate" class="w-64 mb-4"></mat-progress-bar>
+          <span class="text-gray-700">Registrando pagos...</span>
+        </div>
+      </div>
 
-    <form [formGroup]="form" class="space-y-6" (ngSubmit)="ok()">      
       <!-- Resumen de Total -->
       <div *ngIf="data?.total as t" class="bg-blue-50 rounded-lg p-4 border border-blue-200">
         <div class="flex items-center justify-between">
@@ -42,7 +62,7 @@ export interface EnviarLabData {
       </div>
 
       <!-- Pagos -->
-      <mat-card class="form-card">
+      <mat-card class="p-6 w-full form-card">
         <mat-card-header class="border-b border-gray-100 pb-4 mb-4">
           <mat-card-title class="flex items-center gap-2 text-lg font-semibold">
             <mat-icon class="text-primary">payments</mat-icon>
@@ -57,67 +77,69 @@ export interface EnviarLabData {
               <h3 class="font-medium text-gray-700">Pagos registrados</h3>
               <button mat-stroked-button 
                       type="button" 
-                      (click)="addPago()"
-                      class="action-button">
+                      (click)="agregarPago()"
+                      class="action-button"
+                      [disabled]="procesando()">
                 <mat-icon>add</mat-icon>
                 Agregar pago
               </button>
             </div>
 
             <div class="space-y-3">
-              <div *ngFor="let g of pagos.controls; let i = index; trackBy: trackByIndex"
+              <div *ngFor="let pago of pagos.controls; let i = index; trackBy: trackByIndex"
                    [formGroupName]="i"
                    class="pago-item bg-gray-50 rounded-lg p-4 transition-all hover:bg-gray-100">
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                   <mat-form-field appearance="fill" class="md:col-span-3 custom-form-field">
                     <mat-label>Método de pago</mat-label>
-                    <mat-select formControlName="metodo">
-                      <mat-option value="Efectivo">
-                        <div class="flex items-center gap-2">
-                          <mat-icon class="text-base">money</mat-icon>
-                          Efectivo
-                        </div>
-                      </mat-option>
-                      <mat-option value="Tarjeta">
-                        <div class="flex items-center gap-2">
-                          <mat-icon class="text-base">credit_card</mat-icon>
-                          Tarjeta
-                        </div>
-                      </mat-option>
-                      <mat-option value="Transferencia">
-                        <div class="flex items-center gap-2">
-                          <mat-icon class="text-base">account_balance</mat-icon>
-                          Transferencia
-                        </div>
-                      </mat-option>
+                    <mat-select formControlName="metodo" [disabled]="procesando()">
+                      <mat-option value="Efectivo">Efectivo</mat-option>
+                      <mat-option value="Tarjeta">Tarjeta</mat-option>
+                      <mat-option value="Transferencia">Transferencia</mat-option>
                     </mat-select>
                     <mat-icon matPrefix class="prefix-icon">payment</mat-icon>
-                  </mat-form-field>
+                  </mat-form-field>                  
 
                   <mat-form-field appearance="fill" class="md:col-span-3 custom-form-field">
                     <mat-label>Monto</mat-label>
-                    <input matInput type="number" formControlName="monto" min="0" step="0.01" placeholder="0.00" />
+                    <input 
+                      matInput 
+                      type="text"
+                      formControlName="monto" 
+                      mask="separator.2"
+                      [thousandSeparator]="','"
+                      [separatorLimit]="'100000000'"
+                      [prefix]="'$ '"
+                      [allowNegativeNumbers]="false"
+                      placeholder="$ 0.00"
+                      [disabled]="procesando()" 
+                    />
                     <mat-icon matPrefix class="prefix-icon">attach_money</mat-icon>
-                    <mat-error *ngIf="g.get('monto')?.hasError('min')">El monto debe ser ≥ 0</mat-error>
+                    <mat-error *ngIf="pago.get('monto')?.hasError('required')">El monto es requerido</mat-error>
+                    <mat-error *ngIf="pago.get('monto')?.hasError('min')">El monto debe ser ≥ 0</mat-error>
                   </mat-form-field>
 
                   <mat-form-field appearance="fill" class="md:col-span-3 custom-form-field">
                     <mat-label>Autorización</mat-label>
-                    <input matInput formControlName="autorizacion" placeholder="Número de autorización" />
+                    <input matInput formControlName="autorizacion" 
+                           placeholder="Número de autorización" 
+                           [disabled]="procesando()" />
                     <mat-icon matPrefix class="prefix-icon">verified</mat-icon>
                   </mat-form-field>
 
                   <div class="md:col-span-3 flex items-center gap-2">
                     <mat-form-field appearance="fill" class="flex-1 custom-form-field">
                       <mat-label>Nota adicional</mat-label>
-                      <input matInput formControlName="nota" placeholder="Observación del pago" />
+                      <input matInput formControlName="nota" 
+                             placeholder="Observación del pago" 
+                             [disabled]="procesando()" />
                       <mat-icon matPrefix class="prefix-icon">note</mat-icon>
                     </mat-form-field>
                     <button mat-icon-button 
                             type="button" 
-                            (click)="removePago(i)"
+                            (click)="eliminarPago(i)"
                             class="remove-button"
-                            [disabled]="pagos.length <= 1">
+                            [disabled]="pagos.length <= 1 || procesando()">
                       <mat-icon>delete</mat-icon>
                     </button>
                   </div>
@@ -137,7 +159,7 @@ export interface EnviarLabData {
                 <div class="text-sm font-medium text-blue-700">Pagado</div>
                 <div class="text-lg font-bold text-blue-900">{{ totalPagos | number:'1.2-2' }}</div>
               </div>
-              <div [class]="getPendienteClass(t)" class="rounded-lg p-3 border">
+              <div [class]="obtenerClasePendiente(t)" class="rounded-lg p-3 border">
                 <div class="text-sm font-medium">Pendiente</div>
                 <div class="text-lg font-bold">{{ (t - totalPagos) | number:'1.2-2' }}</div>
               </div>
@@ -157,27 +179,30 @@ export interface EnviarLabData {
       <div class="flex justify-end gap-3 pt-4">
         <button mat-stroked-button 
                 type="button" 
-                (click)="close()"
-                class="cancel-button">
+                (click)="cancelar()"
+                class="cancel-button"
+                [disabled]="procesando()">
           <mat-icon>cancel</mat-icon>
           Cancelar
         </button>
         <button mat-flat-button 
                 color="primary" 
                 type="submit" 
-                [disabled]="form.invalid || ((data.total ?? 0) > 0 && totalPagos > (data.total ?? 0))"
+                [disabled]="form.invalid || ((data.total ?? 0) > 0 && totalPagos > (data.total ?? 0)) || procesando()"
                 class="save-button">
           <mat-icon>send</mat-icon>
-          Enviar a Laboratorio
+          {{ procesando() ? 'Registrando...' : 'Registrar pagos' }}
         </button>
       </div>
     </form>
   </div>
   `,
-  styles: [`
-    :host { 
-      display: block; 
-      max-width: 880px; 
+  styles: [`    
+    :host {
+      display: block;
+      width: 100%;      
+      max-height: 90vh;
+      overflow: auto;
     }
 
     .form-card { 
@@ -265,7 +290,6 @@ export interface EnviarLabData {
       box-shadow: 0 2px 4px rgba(6, 182, 212, 0.1);
     }
 
-    /* Estilos para los campos de formulario */
     .custom-form-field {
       width: 100%;
     }
@@ -275,7 +299,6 @@ export interface EnviarLabData {
       margin-right: 8px;
     }
 
-    /* Estilos para mat-form-field fill */
     .mat-form-field-appearance-fill .mat-form-field-flex {
       background-color: rgba(255, 255, 255, 0.9);
       border-radius: 8px;
@@ -320,33 +343,54 @@ export class EnviarLabDialog {
   private fb = inject(FormBuilder);
   private ref = inject(MatDialogRef<EnviarLabDialog>);
   private snackBar = inject(MatSnackBar);
+  private historiasService = inject(HistoriasService); // Agregar el servicio
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: EnviarLabData) {}
 
+  procesando = signal(false);
+
+  // Formulario simplificado solo para pagos
   form = this.fb.group({
-    laboratorio: ['', Validators.required],
-    servicio: ['Mica', Validators.required],
-    indicaciones: [''],
-    fechaPromesa: [''],
-    referenciaExterna: [''],
-    costo: [null as number | null, [Validators.min(0)]],
     pagos: this.fb.array([
-      this.fb.group({
-        metodo: ['Efectivo'],
-        monto: [0, [Validators.required, Validators.min(0)]],
-        autorizacion: [''],
-        nota: ['']
-      })
+      this.crearGrupoPago()
     ])
   });
 
-  get pagos(): FormArray { return this.form.get('pagos') as FormArray; }
-
-  get totalPagos(): number {
-    return this.pagos.controls.reduce((acc, c) => acc + Number(c.get('monto')?.value || 0), 0);
+  get pagos(): FormArray { 
+    return this.form.get('pagos') as FormArray; 
   }
 
-  getPendienteClass(total: number): string {
+  get totalPagos(): number {
+    return this.pagos.controls.reduce((total, control) => {
+      const monto = control.get('monto')?.value;
+      return total + this.convertirMontoANumero(monto);
+    }, 0);
+  }
+
+  private crearGrupoPago() {
+    return this.fb.group({
+      metodo: ['Efectivo', Validators.required],
+      monto: ['', [Validators.required, Validators.min(0)]],
+      autorizacion: [''],
+      nota: ['']
+    });
+  }  
+
+  private convertirMontoANumero(montoStr: string | number | null): number {
+  console.log('Convirtiendo monto:', montoStr);
+  if (!montoStr) return 0;
+    
+  if (typeof montoStr === 'number') {
+    console.log('Monto ya es número:', montoStr);
+    return montoStr;
+  }
+    
+  const numeroConvertido = parseFloat(montoStr.replace('$ ', '').replace(/,/g, ''));
+  console.log('Monto convertido a número:', numeroConvertido);
+  return numeroConvertido;
+}
+
+  obtenerClasePendiente(total: number): string {
     const pendiente = total - this.totalPagos;
     if (pendiente === 0) {
       return 'bg-green-50 border-green-200 text-green-900';
@@ -357,59 +401,91 @@ export class EnviarLabDialog {
     }
   }
 
-  addPago() {
-    this.pagos.push(this.fb.group({
-      metodo: ['Efectivo'],
-      monto: [0, [Validators.required, Validators.min(0)]],
-      autorizacion: [''],
-      nota: ['']
-    }));
+  agregarPago() {
+    this.pagos.push(this.crearGrupoPago());
   }
 
-  removePago(i: number) {
+  eliminarPago(indice: number) {
     if (this.pagos.length > 1) {
-      this.pagos.removeAt(i);
+      this.pagos.removeAt(indice);
     }
   }
 
-  trackByIndex = (_: number, __: unknown) => _;
+  trackByIndex = (indice: number, _: unknown) => indice;
 
-  close() { 
+  cancelar() { 
     this.ref.close(); 
   }
 
-  ok() {
+  registrarPagos() {
     if (this.form.invalid) {
-      this.snackBar.open('❌ Por favor complete todos los campos requeridos', 'Cerrar', {
-        duration: 3000,
-        panelClass: ['bg-red-500', 'text-white']
-      });
+      this.mostrarError('❌ Por favor complete todos los campos requeridos');
       return;
     }
 
     if (typeof this.data?.total === 'number' && this.totalPagos > this.data.total) {
-      this.snackBar.open('❌ El monto pagado no puede exceder el total a cubrir', 'Cerrar', {
-        duration: 4000,
-        panelClass: ['bg-red-500', 'text-white']
-      });
+      this.mostrarError('❌ El monto pagado no puede exceder el total a cubrir');
       return;
     }
 
     // Validar que al menos un pago tenga monto > 0 si hay total
     if (this.data?.total && this.data.total > 0) {
-      const hasValidPayment = this.pagos.controls.some(control => 
-        Number(control.get('monto')?.value || 0) > 0
+      const tienePagoValido = this.pagos.controls.some(control => 
+        this.convertirMontoANumero(control.get('monto')?.value) > 0
       );
       
-      if (!hasValidPayment) {
-        this.snackBar.open('⚠️ Debe registrar al menos un pago para enviar la orden', 'Cerrar', {
-          duration: 4000,
-          panelClass: ['bg-yellow-500', 'text-white']
-        });
+      if (!tienePagoValido) {
+        this.mostrarAdvertencia('⚠️ Debe registrar al menos un pago para enviar la orden');
         return;
       }
     }
 
-    this.ref.close(this.form.getRawValue());
+    // Preparar datos para enviar al servicio
+    const pagosParaEnviar: PagoRequest[] = this.pagos.controls.map(control => ({
+      metodo: control.get('metodo')?.value,
+      monto: this.convertirMontoANumero(control.get('monto')?.value),
+      autorizacion: control.get('autorizacion')?.value || undefined,
+      nota: control.get('nota')?.value || undefined
+    }));
+
+    // Llamar al servicio directamente desde aquí
+    this.procesando.set(true);
+    
+    this.historiasService.agregarPagos(this.data.historiaId, pagosParaEnviar).subscribe({
+      next: () => {
+        this.mostrarExito('✅ Pagos registrados exitosamente');
+        this.ref.close({ 
+          success: true, 
+          pagos: pagosParaEnviar,
+          totalPagado: this.totalPagos
+        });
+      },
+      error: (err) => {
+        console.error('Error al registrar pagos:', err);
+        this.mostrarError('❌ Ocurrió un error al registrar los pagos. Intente nuevamente.');
+        this.procesando.set(false);
+      }
+    });
+  }
+
+  private mostrarError(mensaje: string) {
+    this.snackBar.open(mensaje, 'Cerrar', {
+      duration: 3000,
+      panelClass: ['bg-red-500', 'text-white']
+    });
+  }
+
+  private mostrarAdvertencia(mensaje: string) {
+    this.snackBar.open(mensaje, 'Cerrar', {
+      duration: 4000,
+      panelClass: ['bg-yellow-500', 'text-white']
+    });
+  }
+
+  private mostrarExito(mensaje: string) {
+    this.snackBar.open(mensaje, 'Cerrar', {
+      duration: 3000,
+      panelClass: ['bg-green-500', 'text-white']
+    });
   }
 }

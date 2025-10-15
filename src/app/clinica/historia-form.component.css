@@ -86,3 +86,14 @@
   cursor: not-allowed;
   transform: none;
 }
+
+/* Agregar estos estilos si es necesario */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}

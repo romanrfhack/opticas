@@ -287,3 +287,20 @@ export interface PrescripcionMaterialCompleto extends PrescripcionMaterial {
 export interface PrescripcionArmazonCompleto extends PrescripcionArmazon {
   producto: ProductDto;
 }
+
+
+export interface PagoRequest {
+  metodo: string;
+  monto: number;
+  autorizacion?: string;
+  nota?: string;
+}
+
+export interface PagoResponse {
+  id: string;
+  metodo: string;
+  monto: number;
+  autorizacion?: string;
+  nota?: string;
+  fecha: string;  
+}

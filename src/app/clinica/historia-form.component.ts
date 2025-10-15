@@ -18,13 +18,10 @@ import { of } from 'rxjs';
 import { PacientesService } from '../core/pacientes.service';
 import { HistoriasService } from '../core/historias.service';
 import { MaterialesService } from '../core/materiales.service';
-import { AgudezaDto, ArmazonDto, CrearHistoriaRequest, LcDto, MaterialDto, MaterialHistoriaDto, MaterialItem, PacienteItem, RxDto } from '../core/models/clinica.models';
+import { AgudezaDto, ArmazonDto, CrearHistoriaRequest, LcDto, MaterialDto, MaterialHistoriaDto, MaterialItem, PacienteItem, PagoResponse, RxDto } from '../core/models/clinica.models';
 import { EnviarLabDialog } from './enviar-lab.dialog';
 import { UltimasVisitasComponent } from './ultimas-visitas.component';
 import { VisitaDetalleModalComponent } from './components/visita-detalle-modal.component';
-
-// Componentes hijos
-
 
 import { AgudezaVisualComponent } from './components/agudeza-visual.component';
 import { RxFormComponent } from './components/rx-form.component';
@@ -39,8 +36,7 @@ import { PacienteFormComponent } from './components/paciente-form.component';
     CommonModule, FormsModule, ReactiveFormsModule,
     MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule,
     MatAutocompleteModule, MatSelectModule, MatDialogModule, 
-    MatSnackBarModule, MatProgressBarModule, MatCardModule,
-    
+    MatSnackBarModule, MatProgressBarModule, MatCardModule,    
     // Componentes hijos
     PacienteFormComponent,
     PacienteCardComponent,
@@ -58,7 +54,7 @@ export class HistoriaFormComponent implements OnInit {
   private matApi = inject(MaterialesService);
   private dialog = inject(MatDialog);
   private snack = inject(MatSnackBar);
-  private destroyRef = inject(DestroyRef);
+  private destroyRef = inject(DestroyRef);  
   observaciones: string = '';
 
   loading = signal(false);
@@ -98,13 +94,21 @@ export class HistoriaFormComponent implements OnInit {
   lcMarca = ''; lcModelo = ''; lcObs = '';
   
   historiaId = signal<string | null>(null);
+  
+  armazonesSel: any[] = [];
+  lentesContactoSel: any[] = [];
 
-  // Propiedades para manejar los datos
-armazonesSel: any[] = []; // O el tipo específico que uses
-lentesContactoSel: any[] = []; // Para lentes de contacto
+  pagosRegistrados = signal<PagoResponse[]>([]);
+  mostrandoPagos = signal(false);
+  cargandoPagos = signal(false);
 
-  ngOnInit() {
-    // Autocomplete de pacientes
+  precioArmazones = 0;
+  precioLentesContacto = 0;
+  precioMateriales = 0;
+  precioServicios = 0;
+  precioConsulta = 0;
+
+  ngOnInit() {    
     this.pacForm.controls.nombre.valueChanges.pipe(
       debounceTime(250),
       distinctUntilChanged(),
@@ -114,14 +118,13 @@ lentesContactoSel: any[] = []; // Para lentes de contacto
       }),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(list => this.sugeridos.set(list));
-
-    // Cargar catálogo de materiales
+    
     this.matApi.list().pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (list) => this.materiales.set(list || []),
       error: () => this.materiales.set([])
-    });
+    });    
   }  
 
   selectPaciente(p: PacienteItem) {
@@ -165,51 +168,42 @@ lentesContactoSel: any[] = []; // Para lentes de contacto
     this.pacienteId.set(null);
   }
   
-  // En historia-form.component.ts
+  
 agregarMaterial(materialData?: MaterialHistoriaDto) {
   if (!this.materialSelId && !materialData) return;
   
   let materialId: string;
   let observaciones: string;
-
-  // Si viene el data completo (con observaciones), usarlo
+  
   if (materialData) {
     materialId = materialData.materialId;
     observaciones = materialData.observaciones || '';
-  } else {
-    // Si no, usar los valores locales (para compatibilidad)
+  } else {    
     materialId = this.materialSelId!;
     observaciones = this.materialObs;
   }
 
   const mat = this.materiales().find(m => m.id === materialId);
-  if (!mat) return;
-  
-  console.log('📦 Agregando material al estado principal:');
-  console.log('   - Material:', mat.descripcion);
-  console.log('   - Observaciones:', observaciones);
+  if (!mat) return;    
   
   this.materialesSel.update(list => [...list, {
     ...mat,
-    observaciones: observaciones // ✅ Asegurar que las observaciones se guarden
+    observaciones: observaciones
   }]);
   
   this.materialSelId = null;
   this.materialObs = '';
+  this.calcularPrecioSugerido();
 }
 
-quitarMaterial(index: number) {
-  console.log('🗑️ Quitando material en índice:', index);
-  console.log('📋 Materiales antes:', this.materialesSel());
-  
+quitarMaterial(index: number) {    
   this.materialesSel.update(list => {
-    const nuevaLista = list.filter((_, idx) => idx !== index);
-    console.log('📋 Materiales después:', nuevaLista);
+    const nuevaLista = list.filter((_, idx) => idx !== index);    
     return nuevaLista;
   });
 }
 
-  agregarLC() {
+agregarLC() {
     if (!this.lcTipo) return;
     this.lcSel.update(list => [...list, {
       tipo: this.lcTipo,
@@ -221,6 +215,7 @@ quitarMaterial(index: number) {
     this.lcMarca = '';
     this.lcModelo = '';
     this.lcObs = '';
+    this.calcularPrecioSugerido();
   }
 
   quitarLC(i: number) {
@@ -229,30 +224,24 @@ quitarMaterial(index: number) {
 
   abrirEnviarLab() {
     if (!this.historiaId()) return;
-    this.dialog.open(EnviarLabDialog, {
-      width: '500px',
+    this.dialog.open(EnviarLabDialog, {      
+      maxWidth: '100vw',               
+      panelClass: [
+        'w-full', 'sm:w-11/12', 'md:w-4/5', 'max-w-screen-xl'
+      ],
       data: { historiaId: this.historiaId() }
     });
   }
 
-  
-
-// En el componente principal, actualiza las propiedades para lentes de contacto
-//lentesContactoSel: any[] = [];
-
-// Método para manejar lentes de contacto desde MaterialesFormComponent
 onLentesContactoChange(lentes: any[]) {
   this.lentesContactoSel = lentes;
   console.log('📦 Lentes de contacto actualizados:', lentes);
 }
 
-
-// Método guardar() actualizado
 guardar() {
   if (!this.pacienteId()) return;
   this.loading.set(true);
 
-  // Mapear agudeza visual al formato del backend
   const agudeza: AgudezaDto[] = [
     { Condicion: 'SinLentes', Ojo: 'OD', Denominador: this.avSinOD ?? 0 },
     { Condicion: 'SinLentes', Ojo: 'OI', Denominador: this.avSinOI ?? 0 },
@@ -260,7 +249,6 @@ guardar() {
     { Condicion: 'ConLentes', Ojo: 'OI', Denominador: this.avConOI ?? 0 }
   ];    
 
-  // Mapear RX al formato del backend
   const rx: RxDto[] = this.filasRx.map(fila => ({
     Ojo: fila.ojo,
     Distancia: fila.dist,
@@ -268,23 +256,20 @@ guardar() {
     Cyl: fila.cyl,
     Eje: fila.eje,
     Add: fila.add,
-    Dip: fila.dip?.toString(), // Asegurar que sea string
+    Dip: fila.dip?.toString(),
     AltOblea: fila.altOblea
   }));
-
-  // Mapear materiales al formato del backend
+  
   const materiales: MaterialDto[] = this.materialesSel().map(m => ({
     materialId: m.id,
     observaciones: m.observaciones || null
   }));
-
-  // Mapear armazones al formato del backend
+  
   const armazones: ArmazonDto[] = this.armazonesSel.map(a => ({
     productoId: a.productoId || a.id,
     observaciones: a.observaciones || null
   }));
-
-  // Mapear lentes de contacto al formato del backend
+  
   const lentesContacto: LcDto[] = this.lentesContactoSel.map(lc => ({
     tipo: lc.tipo,
     marca: lc.marca || null,
@@ -320,14 +305,12 @@ guardar() {
   });
 }
 
-// Método guardarBorrador() también necesita actualizarse para usar la misma estructura
 guardarBorrador() {
   if (!this.pacienteId()) {
     console.error('No hay paciente seleccionado');
     return;
-  }
-
-  // Usar la misma estructura que el método guardar() para consistencia
+  }    
+  
   const agudeza: AgudezaDto[] = [
     { Condicion: 'SinLentes', Ojo: 'OD', Denominador: this.avSinOD ?? 0 },
     { Condicion: 'SinLentes', Ojo: 'OI', Denominador: this.avSinOI ?? 0 },
@@ -365,13 +348,13 @@ guardarBorrador() {
 
   const datosHistoria = {
     pacienteId: this.pacienteId(),
-    agudezaVisual: { // Mantener esto para debug interno si quieres
+    agudezaVisual: { 
       sinOD: this.avSinOD,
       sinOI: this.avSinOI,
       conOD: this.avConOD,
       conOI: this.avConOI
     },
-    prescripcion: this.filasRx, // Mantener para debug
+    prescripcion: this.filasRx,
     materiales: this.materialesSel().map(m => ({
       id: m.id,
       descripcion: m.descripcion,
@@ -385,8 +368,7 @@ guardarBorrador() {
     lentesContacto: this.lentesContactoSel,
     observaciones: this.observaciones,
     fecha: new Date().toISOString(),
-    
-    // Datos para el backend (para cuando implementes el servicio real)
+        
     backendData: {
       pacienteId: this.pacienteId()!,
       observaciones: this.observaciones,
@@ -401,53 +383,65 @@ guardarBorrador() {
   console.log('=== GUARDANDO BORRADOR ===');
   console.log('📋 Datos para el backend:', datosHistoria.backendData);
   console.log('============================');
-  
-  // Por ahora solo mostramos un mensaje
-  this.guardar();
-  //alert('Borrador guardado exitosamente');
+    
+  this.guardar();  
 }
 
-// Método para registrar pago/adelanto
 registrarPagoAdelanto() {
   if (!this.historiaId()) {
     console.error('No hay historia guardada');
     return;
   }
 
-  console.log('Abriendo modal de pago/adelanto para historia:', this.historiaId());
-  
-  // Aquí abrirías el modal de pago/adelanto
-  // this.abrirModalPago();  
-  this.abrirEnviarLab();
+  console.log('Abriendo modal de pago/adelanto para historia:', this.historiaId());  
+  const dialogRef = this.dialog.open(EnviarLabDialog, {      
+    maxWidth: '100vw',               
+    panelClass: [
+      'w-full', 'sm:w-11/12', 'md:w-4/5', 'max-w-screen-xl'
+    ],
+    data: { 
+      historiaId: this.historiaId(),
+      total: this.totalACobrar - this.totalPagado  // ← Aquí pasamos el total calculado
+    }
+  });
+
+  dialogRef.afterClosed().subscribe(resultado => {
+    if (resultado?.success) {
+      console.log('✅ Pagos registrados exitosamente:', resultado.pagos);
+      console.log('💰 Total pagado:', resultado.totalPagado);
+      
+      // Recargar la lista de pagos
+      this.cargarPagos();
+      
+      this.snack.open('Pagos registrados correctamente', 'Cerrar', { 
+        duration: 3000,
+        panelClass: ['bg-green-500', 'text-white']
+      });
+    }
+  });
 }
 
-// abrirEnviarLab() {
-//     if (!this.historiaId()) return;
-//     const ref = this.dialog.open(EnviarLabDialog, { width: '720px' });
-//     ref.afterClosed().subscribe(data => {
-//       if (!data) return;
-//       this.loading.set(true);
-//       this.hisApi.enviarALab(this.historiaId()!, {
-//         total: +data.total,
-//         pagos: (data.pagos || []).map((p: any) => ({
-//           metodo: p.metodo, monto: +p.monto, autorizacion: p.autorizacion || null, nota: p.nota || null
-//         })),
-//         fechaEstimadaEntrega: data.fechaEstimadaEntrega || null
-//       }).subscribe({
-//         next: () => this.snack.open('Orden enviada a laboratorio', 'OK', { duration: 2000 }),
-//         error: () => this.snack.open('Error al enviar a laboratorio', 'OK', { duration: 2500 }),
-//         complete: () => this.loading.set(false)
-//       });
-//     });
-//   }
+  // Calcular total de pagos
+  get totalPagado(): number {
+    return this.pagosRegistrados().reduce((total, pago) => total + pago.monto, 0);
+  }
 
-// Método para manejar cambios en armazones (si no lo tienes)
+  // Formatear fecha
+  formatearFecha(fecha: string): string {
+    return new Date(fecha).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
 onArmazonesChange(armazones: any[]) {
   console.log('🎯 Armazones recibidos en componente principal:', armazones);
   this.armazonesSel = armazones;
 }
 
-// Métodos para lentes de contacto (si los usas)
 agregarLenteContacto(lente: any) {
   this.lentesContactoSel.push(lente);
 }
@@ -455,4 +449,86 @@ agregarLenteContacto(lente: any) {
 quitarLenteContacto(index: number) {
   this.lentesContactoSel.splice(index, 1);
 }
+
+  cargarPagos() {
+    if (!this.historiaId()) return;
+    
+    this.cargandoPagos.set(true);
+    this.hisApi.obtenerPagos(this.historiaId()!)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (pagos) => {
+          this.pagosRegistrados.set(pagos);
+          this.cargandoPagos.set(false);
+        },
+        error: (err) => {
+          console.error('Error al cargar pagos:', err);
+          this.cargandoPagos.set(false);
+          this.snack.open('Error al cargar los pagos', 'Cerrar', { duration: 3000 });
+        }
+      });
+  }
+
+  // Método para alternar la visualización de pagos
+  togglePagos() {
+    if (!this.mostrandoPagos()) {
+      this.cargarPagos();
+    }
+    this.mostrandoPagos.update(val => !val);
+  }
+
+  // En historia-form.component.ts
+getPagoBadgeClass(metodo: string): string {
+  switch (metodo) {
+    case 'Efectivo':
+      return 'bg-green-100 text-green-800';
+    case 'Tarjeta':
+      return 'bg-blue-100 text-blue-800';
+    case 'Transferencia':
+      return 'bg-purple-100 text-purple-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+}
+
+// Getter para calcular el total
+get totalACobrar(): number {
+  return this.precioConsulta + this.precioServicios + this.precioMateriales + 
+         this.precioArmazones + this.precioLentesContacto;
+}
+
+// Método para formatear moneda
+formatearMoneda(valor: number): string {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(valor);
+}
+
+calcularPrecioSugerido() {
+  // Ejemplo: precio base por material seleccionado
+  const precioBaseMaterial = this.materialesSel().length * 500; // $500 por material
+  const precioBaseArmazones = this.armazonesSel.length * 800; // $800 por armazón
+  const precioBaseLentesContacto = this.lentesContactoSel.length * 600; // $600 por lente de contacto
+  
+  // Si no se ha establecido un precio manual, usar el sugerido
+  if (this.precioMateriales === 0) {
+    this.precioMateriales = precioBaseMaterial;
+  }
+  if (this.precioArmazones === 0) {
+    this.precioArmazones = precioBaseArmazones;
+  }
+  if (this.precioLentesContacto === 0) {
+    this.precioLentesContacto = precioBaseLentesContacto;
+  }
+  
+  // Precio base de consulta y servicios
+  if (this.precioConsulta === 0) {
+    this.precioConsulta = 0; 
+  }
+  if (this.precioServicios === 0) {
+    this.precioServicios = 0; 
+  }
+}
+
 }
