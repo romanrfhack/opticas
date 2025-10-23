@@ -23,7 +23,7 @@ export interface Visita {
 
 @Component({
   standalone: true,
-  selector: 'app-ultimas-visitas',
+  selector: 'app-encargado-ultimas-visitas',
   imports: [CommonModule, MatTableModule, MatButtonModule, MatIconModule],
   template: `
     <div class="text-sm font-semibold mb-2">Últimas visitas</div>
@@ -104,7 +104,7 @@ export interface Visita {
     }
   `]
 })
-export class UltimasVisitasComponent {
+export class EncargadoUltimasVisitasComponent {
   private api = inject(HistoriasService);
   private dialog = inject(MatDialog);
 
@@ -144,7 +144,7 @@ export class UltimasVisitasComponent {
 
 
   verDetalle(visitaId: string): void {
-    console.log("Ver detalle de visita -ultimasvisitas-:", visitaId);
+    console.log("Ver detalle de visita -encargado-:", visitaId);
     this.api.getById(visitaId).subscribe({
       next: (visitaCompleta) => {
         this.dialog.open(VisitaDetalleModalComponent, {

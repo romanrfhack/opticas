@@ -6,6 +6,7 @@ import { ForgotPasswordPage } from './auth/forgot-password.page';
 import { ResetPasswordPage } from './auth/reset-password.page';
 import { SoportePage } from './features/soporte/soporte.page';
 import { DashboardComponent } from './features/dashboard/dashboard';
+//import { OrdenesPage } from './features/ordenes/ordenes.page';
 
 export const routes: Routes = [
   // 1) al entrar a '/', manda a /login
@@ -26,9 +27,7 @@ export const routes: Routes = [
       { path: 'admin/usuarios', canMatch: [roleGuard(['Admin'])],
         loadComponent: () => import('./admin/users/users.page').then(m => m.UsersPage) },
       { path: 'perfil', canActivate: [authGuard],
-        loadComponent: () => import('./account/profile.page').then(m => m.ProfilePage) },
-      // { path: 'dashboard', canActivate: [authGuard],
-      //   loadComponent: () => import('./features/dashboard/dashboard.page').then(m => m.DashboardPage) },
+        loadComponent: () => import('./account/profile.page').then(m => m.ProfilePage) },      
       { path: 'dashboard', canActivate: [authGuard],
         loadComponent: () => import('./features/dashboard/dashboard').then(m => m.DashboardComponent) },
       { path: 'inventario', canActivate: [authGuard],
@@ -45,8 +44,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/historias/historias.page').then(m => m.HistoriasPage) },
       { path: 'visitas/:id', canActivate: [authGuard],
           loadComponent: () => import('./clinica/visita-detalle.component').then(m => m.VisitaDetalleComponent) },
-      { path: 'ordenes', canActivate: [authGuard],
-        loadComponent: () => import('./features/ordenes/ordenes.page').then(m => m.OrdenesPage) },
+      // { path: 'ordenes', canActivate: [authGuard],
+      //   loadComponent: () => import('./features/ordenes/ordenes.page').then(m => m.OrdenesPage) },      
+      { path: 'ordenesEncargado', canActivate: [authGuard],
+        loadComponent: () => import('./features/ordenes/ordenes.page').then(m => m.CostosPageComponent)
+      },
       { path: '**', loadComponent: () => import('./features/not-found/not-found.page').then(m => m.NotFoundPage) },
     ]
   }

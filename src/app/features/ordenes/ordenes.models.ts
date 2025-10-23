@@ -24,3 +24,31 @@ export const STATUS_FLOW: OrderStatus[] = [
   OrderStatus.RECIBIDA_EN_SUCURSAL_ORIGEN,
   OrderStatus.ENTREGADA_AL_CLIENTE
 ];
+
+export interface VisitaCostoRow {
+  id: string;
+  fecha: string;         // ISO
+  paciente: string;
+  usuarioNombre: string;
+  estado: OrderStatus | string | number;
+  total?: number;
+  aCuenta?: number;
+  resta?: number;
+}
+
+export interface PagedResultCE<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}
+
+export interface ChangeVisitaStatusRequest {
+  toStatus: string;
+  observaciones?: string
+  labTipo?: string;
+  labId?: string;
+  labNombre?: string;
+}
+
+//export type PagedResult<T> = { page: number; pageSize: number; total: number; items: T[]; };

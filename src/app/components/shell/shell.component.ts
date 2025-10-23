@@ -55,12 +55,18 @@ import { CompactSucursalSwitcherComponent } from '../../shared/sucursal-switcher
           <a routerLink="/dashboard" routerLinkActive="bg-cyan-50 text-cyan-600"
           class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
           <mat-icon [style.color]="'#06b6d4'">dashboard</mat-icon><span>Dashboard</span>
-        </a>                
-      </div>
+          </a>                
+        </div>
         <a routerLink="/clinica/historia" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">                 
           <mat-icon [style.color]="'#06b6d4'">person_add</mat-icon><span>Nuevo cliente</span>
         </a>
+        <div *ngIf="isAdmin()||isEncargado()">
+          <a routerLink="/ordenesEncargado" routerLinkActive="bg-cyan-50 text-cyan-600"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">                 
+            <mat-icon [style.color]="'#06b6d4'">person_add</mat-icon><span>Costos</span>
+          </a>
+        </div>
         <a routerLink="/inventario" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">          
           <mat-icon [style.color]="'#06b6d4'">inventory_2</mat-icon><span>Inventario</span>
@@ -220,6 +226,7 @@ export class ShellComponent {
   branchesService = inject(BranchesService);
   authService = inject(AuthService);
   isAdmin = computed(() => !!this.authService.user()?.roles?.includes('Admin'));
+  isEncargado = computed(() => !!this.authService.user()?.roles?.includes('Encargado'));
   @ViewChild('sidenav') sidenav!: MatSidenav;
 
   theme = 'light';
