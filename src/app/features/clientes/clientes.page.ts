@@ -34,12 +34,14 @@ import { UltimasVisitasComponent } from "../../clinica/ultimas-visitas.component
     <div class="max-w-7xl mx-auto px-4 py-6">
       <!-- Header Principal -->
       <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-[#06b6d4] rounded-2xl shadow-lg mb-4">
-          <mat-icon class="text-white scale-125">groups</mat-icon>
+        <div class="flex flex-row gap-4 justify-center items-center mb-4">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-[#06b6d4] rounded-2xl shadow-lg mb-4">
+            <mat-icon class="text-white scale-125">groups</mat-icon>
+          </div>
+          <h1 class="text-3xl lg:text-4xl font-bold text-gray-800 mb-3">
+            Gestión de Clientes
+          </h1>
         </div>
-        <h1 class="text-3xl lg:text-4xl font-bold text-gray-800 mb-3">
-          Gestión de Clientes
-        </h1>
         <p class="text-lg text-gray-600 max-w-2xl mx-auto">
           Encuentra y gestiona la información de tus clientes de manera rápida y eficiente
         </p>

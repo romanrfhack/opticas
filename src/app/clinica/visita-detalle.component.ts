@@ -37,6 +37,7 @@ export interface VisitaDetalle {
 
   materiales: Array<{ materialId: string; descripcion: string; marca?: string|null; observaciones?: string|null }>;
   lentesContacto: Array<{ tipo: string; marca?: string|null; modelo?: string|null; observaciones?: string|null }>;
+  conceptos: Array<{ id: string; concepto: string; monto: number; usuarioNombre: string; fecha: string; observaciones?: string | null }>;
 }
 
 

@@ -32,8 +32,7 @@ import { AuthService } from './auth.service';
             placeholder="****"
             required
             [class.is-invalid]="showError"
-            #pinInput="ngModel">
-          
+            #pinInput="ngModel">          
           <div class="invalid-feedback" *ngIf="showError">
             {{ errorMessage }}
           </div>

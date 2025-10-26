@@ -2,18 +2,17 @@ import { Component, Inject, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { RxMedicion, VisitaCompleta } from '../../core/models/clinica.models';
+import { VisitaCompleta } from '../../core/models/clinica.models';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { EnviarLabDialog } from '../enviar-lab.dialog';
-import { OrdenPagosComponent } from '../../features/ordenes/orden-pagos.component';
-import { TotalesCobro } from '../../features/ordenes/ordenes.models';
+import { EnviarLabDialog } from '../../clinica/enviar-lab.dialog';
+
 
 
 @Component({
   standalone: true,
   selector: 'app-visita-detalle-modal',
-  imports: [CommonModule, MatDialogModule, MatIconModule, MatSnackBarModule, OrdenPagosComponent],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatSnackBarModule ],
   template: `
     <div class="modal-container   rounded-2xl shado xl max-h-[95vh] overflow-hidden flex flex-col">
 
@@ -25,7 +24,7 @@ import { TotalesCobro } from '../../features/ordenes/ordenes.models';
               <mat-icon class="text-white  ">visibility</mat-icon>
             </div>
             <div class="min-w-0 gap-4">
-              <h1 class="   text-2xl     truncate">Detalle de Visita</h1>
+              <h1 class="   text-2xl     truncate">Detalle de Costos</h1>
               <div class="flex flex-row items-start justify-between gap-4 ">
                 <div class="flex flex-row items-start justify-between gap-2">
                   <mat-icon>event</mat-icon>
@@ -61,14 +60,15 @@ import { TotalesCobro } from '../../features/ordenes/ordenes.models';
           </div>          
            
           <div class="flex flex-wrap gap-6 no-scrollbar">
-            <!-- RESUMEN -->             
-            <!-- En la sección de RESUMEN/Pagos -->
-            <section id="resumen" class="grid-item">
-              <div class="flex flex-wrap gap-4 bg-[#06b6d4]/10 p-3 rounded-lg mb-4">
-                <mat-icon class="section-icon">remove_red_eye</mat-icon>
-                <h2 class="section-title">Pagos</h2>
-              </div>
-              <div class="content-card content-section">
+            <!-- RESUMEN -->
+             
+              <!-- En la sección de RESUMEN/Pagos -->
+              <section id="resumen" class="grid-item">
+                  <div class="flex flex-wrap gap-4 bg-[#06b6d4]/10 p-3 rounded-lg mb-4">
+                    <mat-icon class="section-icon">remove_red_eye</mat-icon>
+                    <h2 class="section-title">Pagos</h2>
+                  </div>
+                  <div class="content-card content-section">
                 
                 <!-- Botón para agregar pago -->
                 <div class="mb-4 flex justify-end">
@@ -150,37 +150,35 @@ import { TotalesCobro } from '../../features/ordenes/ordenes.models';
                   <mat-icon class="section-icon">healing</mat-icon>
                   <h2 class="section-title">Prescripción RX</h2>                  
                 </div>
-                <div class="table-wrapper overflow-x-auto rounded-lg shadow-sm border border-gray-200">
+                <div class="table-wrapper">
                   <table class="modern-table">
-                    <thead class="bg-gray-50">
-                      <tr>
-                        <th class="px-2 py-2 text-left text-sm font-semibold text-gray-700 min-w-[50px]">Distancia</th>
-                        <th class="px-2 py-2 text-left text-sm font-semibold text-gray-700 min-w-[50px]">Ojo</th>
-                        <th class="px-2 py-2 text-left text-sm font-semibold text-gray-700 min-w-[50px]">Esf.</th>
-                        <th class="px-2 py-2 text-left text-sm font-semibold text-gray-700 min-w-[50px]">Cyl.</th>
-                        <th class="px-2 py-2 text-left text-sm font-semibold text-gray-700 min-w-[50px]">Eje</th>
-                        <th class="px-2 py-2 text-left text-sm font-semibold text-gray-700 min-w-[50px]">ADD</th>
-                        <th class="px-2 py-2 text-left text-sm font-semibold text-gray-700 min-w-[50px]">DIP</th>
-                        <th class="px-2 py-2 text-left text-sm font-semibold text-gray-700 min-w-[50px]">Alt. Obl.</th>
+                    <thead>
+                      <tr class=" ">
+                        <th>Distancia</th>
+                        <th>Ojo</th>
+                        <th>Esf.</th>
+                        <th>Cyl.</th>
+                        <th>Eje</th>
+                        <th>ADD</th>
+                        <th>DIP</th>
+                        <th>Alt. Obl.</th>
                       </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                      <tr *ngFor="let r of data.rx" class="hover:bg-gray-50 transition-colors">
-                        <td class="px-2 py-2 whitespace-nowrap text-sm font-medium text-cyan-500">{{ r.distancia }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.ojo }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.esf ?? '-' }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.cyl ?? '-' }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.eje ?? '-' }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.add ?? '-' }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.dip ?? '-' }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.altOblea ?? '-' }}</td>
+                    <tbody>
+                      <tr *ngFor="let r of data.rx" class="table-row  ">
+                        <td class="  text-[#06b6d4]">{{ r.distancia }}</td>
+                        <td class=" ">{{ r.ojo }}</td>
+                        <td>{{ r.esf ?? '-' }}</td>
+                        <td>{{ r.cyl ?? '-' }}</td>
+                        <td>{{ r.eje ?? '-' }}</td>
+                        <td>{{ r.add ?? '-' }}</td>
+                        <td>{{ r.dip ?? '-' }}</td>
+                        <td>{{ r.altOblea ?? '-' }}</td>
                       </tr>
                       <tr *ngIf="!data.rx || data.rx.length === 0">
                         <td colspan="8" class="empty-table">
-                          <div class="flex flex-col items-center justify-center">
-                            <mat-icon class="text-gray-400 mb-2">description</mat-icon>
-                            <span class="text-sm">No hay datos de prescripción</span>
-                          </div>
+                          <mat-icon>description</mat-icon>
+                          No hay datos de prescripción
                         </td>
                       </tr>
                     </tbody>
@@ -320,24 +318,7 @@ import { TotalesCobro } from '../../features/ordenes/ordenes.models';
                 </ng-template>
               </div>
             </section>
-              
-            <!-- ORDEN DE PAGOS -->
-             <section id="orden-pagos" class="grid-item w-full">
-              <app-orden-pagos              
-                  [visitaId]="data.id"
-                  [materialesCount]="data.materiales.length || 0"
-                  [armazonesCount]="data.armazones.length || 0"
-                  [lentesContactoCount]="data.lentesContacto.length || 0"
-                  [precioConsulta]="precioConsulta"
-                  [precioServicios]="precioServicios"
-                  [precioMateriales]="precioMateriales"
-                  [precioArmazones]="precioArmazones"
-                  [precioLentesContacto]="precioLentesContacto"
-                  [observaciones]="data.observaciones || ''"
-                  (guardar)="onGuardarTotales($event)"
-                  (registrarPago)="onRegistrarPago($event)">
-                </app-orden-pagos>
-            </section>
+
           </div>
         </div>
       </main>
@@ -410,44 +391,41 @@ import { TotalesCobro } from '../../features/ordenes/ordenes.models';
     .empty-state mat-icon, .empty-table mat-icon, .empty-content mat-icon { @apply text-gray-400; }
 
     /* === GRID RESPONSIVO (arreglado) === */
-    /* Limita cada columna a 500px y centra columnas/ítems */
-    .responsive-grid {
-      display: grid;
-      /* auto-fit colapsa tracks vacíos y empaqueta las tarjetas */
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1rem;
-      justify-content: center;   /* centra el conjunto de columnas */
-      justify-items: center;     /* centra cada ítem dentro del track */
-    }
+/* Limita cada columna a 500px y centra columnas/ítems */
+.responsive-grid {
+  display: grid;
+  /* auto-fit colapsa tracks vacíos y empaqueta las tarjetas */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  justify-content: center;   /* centra el conjunto de columnas */
+  justify-items: center;     /* centra cada ítem dentro del track */
+}
 
-    @media (min-width: 640px) {
-      .responsive-grid { gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-    }
-    @media (min-width: 1024px) {
-      .responsive-grid { gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
-    }
-    @media (min-width: 1280px) {
-      .responsive-grid { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
-    }
+@media (min-width: 640px) {
+  .responsive-grid { gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .responsive-grid { gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+}
+@media (min-width: 1280px) {
+  .responsive-grid { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+}
 
-    /* Cada tarjeta no excede 500px. OJO: NO la estires con justify-self: stretch */
-    .grid-item {
-      width: min(100%, 500px);  /* 100% del track pero tope en 500px */
-      min-width: 0;
-      justify-self: center;     /* centra el ítem en tracks anchos */
-    }
+/* Cada tarjeta no excede 500px. OJO: NO la estires con justify-self: stretch */
+.grid-item {
+  width: min(100%, 500px);  /* 100% del track pero tope en 500px */
+  min-width: 0;
+  justify-self: center;     /* centra el ítem en tracks anchos */
+}
 
   `]
 })
-export class VisitaDetalleModalComponent {
-  private dialogRef = inject(MatDialogRef<VisitaDetalleModalComponent>);  
+export class VisitaDetalleCostosComponent {
+  private dialogRef = inject(MatDialogRef<VisitaDetalleCostosComponent>);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
-  constructor(@Inject(MAT_DIALOG_DATA) public data: VisitaCompleta) {
-    console.log('Datos de la visita:', data);
-    ordenarRx(data.rx);
-  }
+  constructor(@Inject(MAT_DIALOG_DATA) public data: VisitaCompleta) {}
 
   get agudezasSinLentes() { return this.data.agudezas?.filter(a => a.condicion === 'SinLentes') ?? []; }
   get agudezasConLentes() { return this.data.agudezas?.filter(a => a.condicion === 'ConLentes') ?? []; }
@@ -477,90 +455,35 @@ export class VisitaDetalleModalComponent {
     };
     return map[estado] ?? 'bg-gray-400';
   }
-  
-  registrarPago() {    
-    const dialogRef = this.dialog.open(EnviarLabDialog, {      
-      maxWidth: '100vw',               
-      panelClass: [
-        'w-full', 'sm:w-11/12', 'md:w-4/5', 'max-w-screen-xl'
-      ],
-      data: { 
-        historiaId: this.data.id, 
-        total: this.data.resta 
-      }
-    });
 
-    dialogRef.afterClosed().subscribe(resultado => {
-      if (resultado?.success) {
-        console.log('✅ Pagos registrados exitosamente:', resultado.pagos);
-        console.log('💰 Total pagado:', resultado.totalPagado);                
-        this.snackBar.open('Pagos registrados correctamente', 'Cerrar', { 
-          duration: 3000,
-          panelClass: ['bg-green-500', 'text-white']
-        });        
-        this.cerrar();
-      }
-    });
-  }
-
-  onGuardarTotales(evt: { visitaId: string | number; totales: TotalesCobro; observaciones: string }): void {
-    // aquí persistes datos
-    // this.ordenesService.guardarTotales(evt.visitaId, evt.totales, evt.observaciones).subscribe(...)
-    console.log('Guardar totales', evt);
-    //cerrar modal o mostrar mensaje
-    this.cerrar();
-  }
-
-  onRegistrarPago(evt: { visitaId: string | number; total: number }): void {
-    // aquí lanzas el flujo de pago
-    // this.pagosService.iniciarPago(evt.visitaId, evt.total)
-    console.log('Registrar pago', evt);
-  }  
-
-  // Getters to avoid arrow functions inside template bindings
-  private get conceptosData(): any[] | undefined {
-    return (this.data as any).conceptos;
-  }
-
-  get precioConsulta(): number {
-    return this.conceptosData?.find((c: any) => c.concepto === 'Consulta')?.monto ?? 0;
-  }
-  get precioServicios(): number {
-    return this.conceptosData?.find((c: any) => c.concepto === 'Servicios')?.monto ?? 0;
-  }
-  get precioMateriales(): number {
-    return this.conceptosData?.find((c: any) => c.concepto === 'Materiales')?.monto ?? 0;
-  }
-  get precioArmazones(): number {
-    return this.conceptosData?.find((c: any) => c.concepto === 'Armazones')?.monto ?? 0;
-  }
-  get precioLentesContacto(): number {
-    return this.conceptosData?.find((c: any) => c.concepto === 'Lentes de contacto')?.monto ?? 0;
-  }
-}
-function ordenarRx(rx: RxMedicion[]) {
-  // Ordenar las mediciones primero distancia (valores: Cerca, Lejos = Primero lejos), luego ojo, luego tipo
-  if (!rx || !Array.isArray(rx)) return rx;
-  const rankDistancia = (d?: string) => {
-    if (d === 'Lejos') return 0;
-    if (d === 'Cerca') return 1;
-    return 2; // valores desconocidos al final
-  };
-
-  return rx.sort((a, b) => {
-    const distanciaComparison = rankDistancia(a.distancia) - rankDistancia(b.distancia);
-    if (distanciaComparison !== 0) return distanciaComparison;
-
-    const ojoComparison = (a.ojo ?? '').localeCompare(b.ojo ?? '');
-    if (ojoComparison !== 0) return ojoComparison;
-
-    // Si son del mismo ojo, ordenar por tipo (si existe 'tipo' en el objeto)
-    const tipoA = (a as any).tipo ?? '';
-    const tipoB = (b as any).tipo ?? '';
-    return String(tipoA).localeCompare(String(tipoB));
+  // En visita-detalle-modal.component.ts
+registrarPago() {
+  // Usamos el id de la visita (historiaId) y la resta como total pendiente
+  const dialogRef = this.dialog.open(EnviarLabDialog, {      
+    maxWidth: '100vw',               
+    panelClass: [
+      'w-full', 'sm:w-11/12', 'md:w-4/5', 'max-w-screen-xl'
+    ],
+    data: { 
+      historiaId: this.data.id, // Asegúrate de que `id` es el identificador de la visita
+      total: this.data.resta // Usamos la resta como total pendiente
+    }
   });
 
+  dialogRef.afterClosed().subscribe(resultado => {
+    if (resultado?.success) {
+      console.log('✅ Pagos registrados exitosamente:', resultado.pagos);
+      console.log('💰 Total pagado:', resultado.totalPagado);
+      
+      // Podemos mostrar un mensaje de éxito
+      this.snackBar.open('Pagos registrados correctamente', 'Cerrar', { 
+        duration: 3000,
+        panelClass: ['bg-green-500', 'text-white']
+      });
 
-  
+      // Aquí podrías recargar los datos de la visita si es necesario
+      // this.recargarVisita();
+    }
+  });
 }
-
+}

@@ -64,7 +64,7 @@ import { CompactSucursalSwitcherComponent } from '../../shared/sucursal-switcher
         <div *ngIf="isAdmin()||isEncargado()">
           <a routerLink="/ordenesEncargado" routerLinkActive="bg-cyan-50 text-cyan-600"
             class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">                 
-            <mat-icon [style.color]="'#06b6d4'">person_add</mat-icon><span>Costos</span>
+            <mat-icon [style.color]="'#06b6d4'">assignment</mat-icon><span>Órdenes</span>
           </a>
         </div>
         <a routerLink="/inventario" routerLinkActive="bg-cyan-50 text-cyan-600"
@@ -79,10 +79,10 @@ import { CompactSucursalSwitcherComponent } from '../../shared/sucursal-switcher
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
           <mat-icon [style.color]="'#06b6d4'">visibility</mat-icon><span>Historias</span>
         </a> -->
-        <a routerLink="/ordenes" routerLinkActive="bg-cyan-50 text-cyan-600"
+        <!-- <a routerLink="/ordenes" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
           <mat-icon [style.color]="'#06b6d4'">assignment</mat-icon><span>Órdenes</span>
-        </a>
+        </a> -->
       </nav>
     </mat-sidenav>
 

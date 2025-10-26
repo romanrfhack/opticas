@@ -9,13 +9,16 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
-import { OrderStatus, STATUS_FLOW } from './ordenes.models';
+import { OrderStatus, OrderStatusLabels, STATUS_FLOW,  } from './ordenes.models';
 
 // Interfaz para los datos de entrada
 export interface CambiarEstatusDialogData {
   visitaId: string;
-  fromStatus: number; // ← Ahora recibe el NÚMERO del estado actual
-  allowed: number[];  // ← Números de estados permitidos
+  fromStatus: number; 
+  allowed: number[];  
+  fecha: string;
+  usuarioNombre: string;
+  Paciente: string;  
 }
 
 @Component({
@@ -27,7 +30,8 @@ export interface CambiarEstatusDialogData {
   ],
   template: `
   <div class="p-1 md:p-2 max-w-[640px]">
-    <h2 mat-dialog-title class="text-xl font-semibold">Cambiar estatus</h2>
+    <h2 mat-dialog-title class="text-xl font-semibold">Cambiar estatus - {{ data.Paciente }}</h2>
+    <h3 mat-dialog-title class="text-md">Último estatus actualizado: {{ getFechaHora(data.fecha) }} por {{ data.usuarioNombre }}</h3>
 
     <div mat-dialog-content class="space-y-4">
 
@@ -146,11 +150,12 @@ export class CambiarEstatusDialog {
     @Inject(MAT_DIALOG_DATA) public data: CambiarEstatusDialogData,
     private ref: MatDialogRef<CambiarEstatusDialog>
   ) {
+    console.log("Datos recibidos en CambiarEstatusDialog:", data);
     // Calcular el siguiente estado en el flujo
     this.suggestedNext = data.fromStatus + 1;
 
     // Verificar si el siguiente estado está dentro del flujo válido
-    const isValidNext = this.suggestedNext >= 0 && this.suggestedNext < STATUS_FLOW.length;
+    const isValidNext = this.suggestedNext >= 0 && this.suggestedNext <= OrderStatus.ENTREGADA_AL_CLIENTE;
     
     // Seleccionar estado por defecto
     if (isValidNext && this.data.allowed.includes(this.suggestedNext)) {
@@ -160,6 +165,16 @@ export class CambiarEstatusDialog {
     } else {
       this.toStatus = data.fromStatus; // Mantener estado actual si no hay opciones
     }
+  }
+
+  getFechaHora(fechaStr: string): string {
+    if (!fechaStr) return 'N/A';
+    const fecha = new Date(fechaStr);
+    console.log("Fecha parseada:", fecha);
+    // Hora central pero quiero hora local cdmx
+    const opciones: Intl.DateTimeFormatOptions = { timeZone: 'America/Mexico_City' };
+    console.log("Fecha formateada:", fecha.toLocaleString('es-MX', opciones));
+    return fecha.toLocaleString('es-MX', opciones); // Formato local
   }
 
   // Verificar si el estado seleccionado requiere datos de laboratorio
@@ -177,7 +192,7 @@ export class CambiarEstatusDialog {
   // Obtener el nombre del estado a partir del número
   getEstadoNombre(estadoIndex: number): string {
     if (estadoIndex >= 0 && estadoIndex < STATUS_FLOW.length) {
-      return STATUS_FLOW[estadoIndex];
+      return OrderStatusLabels[STATUS_FLOW[estadoIndex]];
     }
     return 'Desconocido';
   }

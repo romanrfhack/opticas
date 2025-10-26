@@ -253,7 +253,7 @@ import { ProductosService } from '../../core/productos.service';
             <!-- Observaciones en nueva fila -->
             <div class="col-span-12 mt-2">
               <mat-form-field appearance="fill" class="w-full custom-form-field">
-                <mat-label>Observaciones</mat-label>
+                <mat-label>Observaciones lente de contacto</mat-label>
                 <input matInput [(ngModel)]="lenteContactoObs" placeholder="Graduación, características especiales, etc.">
                 <mat-icon matPrefix class="prefix-icon">note</mat-icon>
               </mat-form-field>

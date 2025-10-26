@@ -343,7 +343,7 @@ export class EnviarLabDialog {
   private fb = inject(FormBuilder);
   private ref = inject(MatDialogRef<EnviarLabDialog>);
   private snackBar = inject(MatSnackBar);
-  private historiasService = inject(HistoriasService); // Agregar el servicio
+  private historiasService = inject(HistoriasService); 
 
   constructor(@Inject(MAT_DIALOG_DATA) public data: EnviarLabData) {}
 
