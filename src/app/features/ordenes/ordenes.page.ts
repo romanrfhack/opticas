@@ -28,7 +28,7 @@ import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, 
   <div class="p-4 space-y-4">
     <h1 *ngIf="isAdmin()" class="text-2xl font-semibold">Ordenes — Todas las sucursales</h1>
     <h1 *ngIf="isEncargado()" class="text-2xl font-semibold">Ordenes — Mi sucursal</h1>
-    <h1 *ngIf="isMensajero()" class="text-2xl font-semibold">Ordenes — Mi sucursal</h1>
+    <h1 *ngIf="isMensajero()" class="text-2xl font-semibold">Ordenes por recoger/entregar</h1>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">      
       <!-- <mat-form-field appearance="outline">
@@ -178,6 +178,11 @@ import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, 
           <td mat-cell *matCellDef="let r">{{ r.usuarioNombre }}</td>
         </ng-container>
 
+        <ng-container matColumnDef="sucursal">
+          <th mat-header-cell *matHeaderCellDef>Sucursal</th>
+          <td mat-cell *matCellDef="let r">{{ r.sucursal }}</td>
+        </ng-container>
+
         <ng-container matColumnDef="estado">
           <th mat-header-cell *matHeaderCellDef>Estado</th>
           <td mat-cell *matCellDef="let r">{{ mostrarEstado(r.estado) }}</td>
@@ -186,12 +191,14 @@ import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, 
         <ng-container matColumnDef="detalle">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let r">            
-            <button mat-icon-button 
-                (click)="verDetalle(r.id)"
-                title="Ver detalle de la visita"
-                class="text-cyan-600 hover:text-cyan-700">
-            <mat-icon>visibility</mat-icon>
-            </button>
+            <div *ngIf="!isMensajero()">
+              <button mat-icon-button 
+                  (click)="verDetalle(r.id)"
+                  title="Ver detalle de la visita"
+                  class="text-cyan-600 hover:text-cyan-700">
+                  <mat-icon>visibility</mat-icon>
+              </button>
+            </div>
           </td>
         </ng-container>
 
@@ -201,9 +208,9 @@ import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, 
             <button mat-icon-button *ngIf="validarPuedeEditar(r)" (click)="abrirCambiarEstatus(r)" title="Cambiar estatus">
               <mat-icon>sync</mat-icon>
             </button>
-            <button mat-icon-button (click)="verHistorial(r.id)" title="Ver historial">
+            <!-- <button mat-icon-button (click)="verHistorial(r.id)" title="Ver historial">
               <mat-icon>history</mat-icon>
-            </button>
+            </button> -->
           </td>
         </ng-container>
 
@@ -225,7 +232,7 @@ export class CostosPageComponent {
   private snackBar = inject(MatSnackBar);
   private authService = inject(AuthService);
 
-  cols = ['fecha','paciente','usuario','estado','detalle', 'acciones'];
+  cols = ['fecha','paciente','usuario','sucursal','estado','detalle', 'acciones'];
   estados = Object.values(OrderStatus);
   
   private fb = inject(FormBuilder);    
@@ -270,7 +277,7 @@ export class CostosPageComponent {
   isAdmin = computed(() => !!this.authService.user()?.roles?.includes('Admin'));
   isEncargado = computed(() => !!this.authService.user()?.roles?.includes('Encargado'));
   isMensajero = computed(() => !!this.authService.user()?.roles?.includes('Mensajero'));
-  estadosUpdateAdmin = [0,1,2,3,4,5,6,7,8];
+  estadosUpdateAdmin = [0,1,2,3,4,5,6,7,8];//todos
   estadosUpdateEncargado = [0,1,3,4,5,6];
   estadosUpdateMensajero = [2,3];
 
@@ -414,8 +421,22 @@ export class CostosPageComponent {
     }
 
     validarPuedeEditar(visita: VisitaCostoRow): boolean {
+      console.log("Validando si puede editar estatus de visita:", visita);
       let puedeEditar = false;
-      let rolUsuario = 'Administrador'; // Aquí deberías obtener el rol real del usuario actual
+      let rolUsuario = this.authService.user()?.roles || [];
+
+      // Coerce visita.estado to a numeric value in a safe way
+      const estadoNum = typeof visita.estado === 'number'
+        ? visita.estado
+        : (typeof visita.estado === 'string' && visita.estado !== '' ? parseInt(visita.estado, 10) : NaN);
+
+      if (rolUsuario.includes('Admin')) {
+        puedeEditar = true;
+      } else if (rolUsuario.includes('Encargado')) {
+        puedeEditar = Number.isFinite(estadoNum) ? this.estadosUpdateEncargado.includes(estadoNum) : false;
+      } else if (rolUsuario.includes('Mensajero')) {
+        puedeEditar = Number.isFinite(estadoNum) ? this.estadosUpdateMensajero.includes(estadoNum) : false;
+      }
       const estadoActual = visita.estado;
       
       return puedeEditar;

@@ -46,7 +46,7 @@ export const routes: Routes = [
           loadComponent: () => import('./clinica/visita-detalle.component').then(m => m.VisitaDetalleComponent) },
       // { path: 'ordenes', canActivate: [authGuard],
       //   loadComponent: () => import('./features/ordenes/ordenes.page').then(m => m.OrdenesPage) },      
-      { path: 'ordenesEncargado', canActivate: [authGuard],
+      { path: 'ordenes', canActivate: [authGuard],
         loadComponent: () => import('./features/ordenes/ordenes.page').then(m => m.CostosPageComponent)
       },
       { path: '**', loadComponent: () => import('./features/not-found/not-found.page').then(m => m.NotFoundPage) },

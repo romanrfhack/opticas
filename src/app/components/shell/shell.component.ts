@@ -57,24 +57,30 @@ import { CompactSucursalSwitcherComponent } from '../../shared/sucursal-switcher
           <mat-icon [style.color]="'#06b6d4'">dashboard</mat-icon><span>Dashboard</span>
           </a>                
         </div>
+        <div *ngIf="!isMensajero()"> 
         <a routerLink="/clinica/historia" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">                 
           <mat-icon [style.color]="'#06b6d4'">person_add</mat-icon><span>Nuevo cliente</span>
         </a>
-        <div *ngIf="isAdmin()||isEncargado()">
-          <a routerLink="/ordenesEncargado" routerLinkActive="bg-cyan-50 text-cyan-600"
+        </div>
+        <div *ngIf="isAdmin()||isEncargado()||isMensajero()">
+          <a routerLink="/ordenes" routerLinkActive="bg-cyan-50 text-cyan-600"
             class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">                 
             <mat-icon [style.color]="'#06b6d4'">assignment</mat-icon><span>Órdenes</span>
           </a>
         </div>
+        <div *ngIf="!isMensajero()"> 
         <a routerLink="/inventario" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">          
           <mat-icon [style.color]="'#06b6d4'">inventory_2</mat-icon><span>Inventario</span>
         </a>
+        </div>
+        <div *ngIf="!isMensajero()"> 
         <a routerLink="/clientes" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
           <mat-icon [style.color]="'#06b6d4'">groups</mat-icon><span>Clientes</span>
         </a>
+        </div>
         <!-- <a routerLink="/historias" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
           <mat-icon [style.color]="'#06b6d4'">visibility</mat-icon><span>Historias</span>
@@ -227,6 +233,7 @@ export class ShellComponent {
   authService = inject(AuthService);
   isAdmin = computed(() => !!this.authService.user()?.roles?.includes('Admin'));
   isEncargado = computed(() => !!this.authService.user()?.roles?.includes('Encargado'));
+  isMensajero = computed(() => !!this.authService.user()?.roles?.includes('Mensajero'));
   @ViewChild('sidenav') sidenav!: MatSidenav;
 
   theme = 'light';

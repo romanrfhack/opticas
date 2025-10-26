@@ -82,15 +82,48 @@ export class LoginPage {
     const { email, password } = this.form.value as any;
 
     this.auth.login(email, password).subscribe({
-      next: res => {
-        this.auth.persist(res);
-        this.router.navigate(['/dashboard']);
-      },
-      error: _ => { 
-        this.error.set('Credenciales inválidas'); 
-        this.loading.set(false); 
-      }
+        next: (res) => this.handleLoginSuccess(res),
+        error: () => this.handleLoginError()
     });
+  }
+
+  private handleLoginSuccess(res: any): void {
+      this.auth.persist(res);
+      this.loading.set(false);
+      
+      const userRoles = this.auth.user()?.roles || [];
+      console.log('Roles del usuario:', userRoles);
+
+      this.navigateByRole(userRoles);
+  }
+
+  private handleLoginError(): void {
+      this.error.set('Credenciales inválidas');
+      this.loading.set(false);
+  }
+
+  private navigateByRole(roles: string[]): void {
+    const navigationRoutes = {
+          mensajero: '/ordenes',
+          admin: '/dashboard',
+          encargado: '/dashboard',
+          default: '/clinica/historia'
+      };
+
+      if (roles.includes('Mensajero')) {
+          console.log('El usuario es un Mensajero');
+          this.router.navigate([navigationRoutes.mensajero]);
+          return;
+      }
+
+      if (roles.includes('Admin') || roles.includes('Encargado')) {
+          console.log('El usuario es Admin o Encargado');
+          this.router.navigate([navigationRoutes.admin]);
+          return;
+      }
+
+      console.log('Navegando a ruta por defecto');
+      this.router.navigate([navigationRoutes.default]);
   }
 
   goLogin(){ this.router.navigateByUrl('/login'); }
