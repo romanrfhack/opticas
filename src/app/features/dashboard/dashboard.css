@@ -242,6 +242,58 @@
   border-radius: 50%;
 }
 
+/* Agregar al archivo dashboard.css existente */
+
+/* Loading State */
+.loading-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  background: white;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.loading-spinner .material-icons {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* No Data State */
+.no-data {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #999;
+  font-style: italic;
+}
+
+/* Update bar colors for the new datasets */
+.bar.total { background: #4CAF50; }
+.bar.new { background: #2196F3; }
+
+/* Add styles for line chart simulation */
+.line.current-year { border-color: #36A2EB; }
+.line.previous-year { border-color: #FF6384; }
+.color.primary { background: #36A2EB; }
+.color.secondary { background: #FF6384; }
+
+/* Add method to component for gradient generation */
+
 /* Responsive */
 @media (max-width: 768px) {
   .charts-grid {

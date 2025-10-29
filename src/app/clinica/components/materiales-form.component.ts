@@ -419,6 +419,8 @@ private emitArmazones() {
   buscarArmazones() {
     this.productosService.getArmazones(this.armazonBusqueda).subscribe({
       next: (armazones) => {
+
+        console.log('🔍 Armazones filtrados ANTES DE ORDENAR:', this.armazonesFiltrados)
         this.armazonesFiltrados = armazones.sort((a, b) => {
           if (a.enSucursalActiva && !b.enSucursalActiva) return -1;
           if (!a.enSucursalActiva && b.enSucursalActiva) return 1;
@@ -428,9 +430,15 @@ private emitArmazones() {
           if (!a.enSucursalActiva && !b.enSucursalActiva) {
             if (a.sucursalesConStock.length > 0 && b.sucursalesConStock.length === 0) return -1;
             if (a.sucursalesConStock.length === 0 && b.sucursalesConStock.length > 0) return 1;
-          }
+          }          
+          // Finalmente, ordenar alfabéticamente          
           return a.nombre.localeCompare(b.nombre);
         });
+        // Finalmente, ordenar alfabéticamente this.armazonesFiltrados
+        this.armazonesFiltrados.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        this.armazonesFiltrados = this.armazonesFiltrados.slice(0, 10);
+        console.log('🔍 Armazones filtrados:', this.armazonesFiltrados);
+
       },
       error: (err) => {
         console.error('Error al buscar armazones:', err);

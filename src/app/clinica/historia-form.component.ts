@@ -93,6 +93,7 @@ export class HistoriaFormComponent implements OnInit {
   // Materiales
   materiales = signal<MaterialItem[]>([]);
   materialesSel = signal<(MaterialItem & { observaciones?: string })[]>([]);
+  visitaGuardada = signal(false);
   materialSelId: string | null = null;
   materialObs: string = '';
 
@@ -344,6 +345,7 @@ guardar() {
   ).subscribe({
     next: (res) => {
       this.historiaId.set(res.id);
+      this.visitaGuardada.set(true); 
       this.snack.open('Historia guardada exitosamente', 'Cerrar', { duration: 3000 });
       this.loading.set(false);
     },
@@ -579,6 +581,55 @@ calcularPrecioSugerido() {
   if (this.precioServicios === 0) {
     this.precioServicios = 0; 
   }
+}
+
+nuevaVisita() {
+  // Resetear todos los estados
+  this.visitaGuardada.set(false);
+  this.pacienteId.set(null);
+  this.historiaId.set(null);
+  this.pacForm.reset();
+  
+  // Resetear agudeza visual
+  this.avSinOD = undefined;
+  this.avSinOI = undefined;
+  this.avConOD = undefined;
+  this.avConOI = undefined;
+  
+  // Resetear RX
+  this.filasRx = [
+    { dist: 'Lejos', ojo: 'OD', esf: null, cyl: null, eje: null, add: null, dip: '', altOblea: null },
+    { dist: 'Lejos', ojo: 'OI', esf: null, cyl: null, eje: null, add: null, dip: '', altOblea: null },
+    { dist: 'Cerca', ojo: 'OD', esf: null, cyl: null, eje: null, add: null, dip: '', altOblea: null },
+    { dist: 'Cerca', ojo: 'OI', esf: null, cyl: null, eje: null, add: null, dip: '', altOblea: null },
+  ];
+  
+  // Resetear materiales
+  this.materialesSel.set([]);
+  this.materialSelId = null;
+  this.materialObs = '';
+  
+  // Resetear armazones y lentes de contacto
+  this.armazonesSel = [];
+  this.lentesContactoSel = [];
+  
+  // Resetear observaciones
+  this.observaciones = '';
+  
+  // Resetear precios
+  this.precioArmazones = 0;
+  this.precioLentesContacto = 0;
+  this.precioMateriales = 0;
+  this.precioServicios = 0;
+  this.precioConsulta = 0;
+  
+  // Resetear pagos
+  this.pagosRegistrados.set([]);
+  
+  this.snack.open('Formulario listo para nueva visita', 'Cerrar', { 
+    duration: 3000,
+    panelClass: ['bg-blue-500', 'text-white']
+  });
 }
 
 }

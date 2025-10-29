@@ -483,7 +483,7 @@ export class CostosPageComponent {
 
       if (rolUsuario.includes('Admin')) {
         puedeEditar = true;
-      } else if (rolUsuario.includes('Encargado')) {
+      } else if (rolUsuario.includes('Encargado de Sucursal')) {
         puedeEditar = Number.isFinite(estadoNum) ? this.estadosUpdateEncargado.includes(estadoNum) : false;
       } else if (rolUsuario.includes('Mensajero')) {
         puedeEditar = Number.isFinite(estadoNum) ? this.estadosUpdateMensajero.includes(estadoNum) : false;

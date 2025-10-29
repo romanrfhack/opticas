@@ -69,13 +69,25 @@
         <mat-card class="form-card">
           <mat-card-content>
             <div class="flex gap-4">
-              <button mat-flat-button 
+              <!-- Botón Guardar (se muestra cuando NO está guardado) -->
+              <button *ngIf="!visitaGuardada()" 
+                      mat-flat-button 
                       color="primary" 
                       (click)="guardarBorrador()" 
                       [disabled]="!pacienteId()"
                       class="save-button flex-1 py-3">
                 <mat-icon>save</mat-icon>
                 Guardar Visita
+              </button>
+              
+              <!-- Botón Nuevo (se muestra cuando SÍ está guardado) -->
+              <button *ngIf="visitaGuardada()" 
+                      mat-flat-button 
+                      color="accent" 
+                      (click)="nuevaVisita()"
+                      class="new-button flex-1 py-3">
+                <mat-icon>add</mat-icon>
+                Nueva Visita
               </button>
             </div>
             
@@ -89,8 +101,8 @@
                 <div>Materiales: {{ materialesSel().length }} seleccionados</div>
                 <div>Armazones: {{ armazonesSel.length }} seleccionados</div>
                 <div>Lentes Contacto: {{ lentesContactoSel.length }} seleccionados</div>
-                <!-- Agregar esta línea -->
                 <div>Pagos: {{ pagosRegistrados().length }} registrados ({{ totalPagado | number:'1.2-2' }})</div>
+                <div>Estado: {{ visitaGuardada() ? 'Visita Guardada' : 'En Proceso' }}</div>
               </div>
             </div>
           </mat-card-content>

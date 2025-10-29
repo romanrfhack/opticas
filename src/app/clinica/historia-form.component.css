@@ -97,3 +97,13 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Estilos para el botón Nueva Visita */
+.new-button {
+  @apply bg-green-500 text-white rounded-lg px-5 transition-all duration-300 hover:bg-green-600 hover:scale-105 disabled:bg-slate-300 disabled:transform-none;
+}
+
+.new-button:hover:not([disabled]) {
+  background: #059669 !important;
+  transform: translateY(-1px);
+}

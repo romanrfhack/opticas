@@ -232,7 +232,8 @@ export class ShellComponent {
   branchesService = inject(BranchesService);
   authService = inject(AuthService);
   isAdmin = computed(() => !!this.authService.user()?.roles?.includes('Admin'));
-  isEncargado = computed(() => !!this.authService.user()?.roles?.includes('Encargado'));
+  //Encargado de Sucursal
+  isEncargado = computed(() => !!this.authService.user()?.roles?.includes('Encargado de Sucursal'));
   isMensajero = computed(() => !!this.authService.user()?.roles?.includes('Mensajero'));
   @ViewChild('sidenav') sidenav!: MatSidenav;
 

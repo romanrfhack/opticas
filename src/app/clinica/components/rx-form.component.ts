@@ -1,15 +1,19 @@
+
+
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { SignoPositivoPipe } from '../../shared/tools/signo-positivo.pipe';
 
 @Component({
   standalone: true,
   selector: 'app-rx-form',
   imports: [
     CommonModule, FormsModule,
-    MatCardModule, MatIconModule
+    MatCardModule, MatIconModule,
+    SignoPositivoPipe // ← Agrega el pipe aquí
   ],
   template: `
     <mat-card class="form-card">
@@ -69,8 +73,11 @@ import { MatIconModule } from '@angular/material/icon';
                          [(ngModel)]="r.esf" 
                          (ngModelChange)="onEsfChange(r, $event)"
                          [class.error]="hasError(r, 'esf')"
-                         placeholder="-20 a +20"
-                         title="Esfera: -20 a +20">
+                         [title]="'Esfera: ' + (r.esf | signoPositivo)"
+                         placeholder="-20 a +20">
+                  <div class="absolute-value-display" *ngIf="r.esf !== null && r.esf !== undefined">
+                    {{ r.esf | signoPositivo }}
+                  </div>
                 </td>
                 
                 <!-- Cyl -->
@@ -81,8 +88,11 @@ import { MatIconModule } from '@angular/material/icon';
                          [(ngModel)]="r.cyl" 
                          (ngModelChange)="onCylChange(r, $event)"
                          [class.error]="hasError(r, 'cyl')"
-                         placeholder="-10 a +10"
-                         title="Cilindro: -10 a +10">
+                         [title]="'Cilindro: ' + (r.cyl | signoPositivo)"
+                         placeholder="-10 a +10">
+                  <div class="absolute-value-display" *ngIf="r.cyl !== null && r.cyl !== undefined">
+                    {{ r.cyl | signoPositivo }}
+                  </div>
                 </td>
                 
                 <!-- Eje -->
@@ -104,8 +114,11 @@ import { MatIconModule } from '@angular/material/icon';
                          [(ngModel)]="r.add" 
                          (ngModelChange)="onAddChange(r, $event)"
                          [class.error]="hasError(r, 'add')"
-                         placeholder="1 a 9"
-                         title="ADD: 1 a 9">
+                         [title]="'ADD: ' + (r.add | signoPositivo)"
+                         placeholder="1 a 9">
+                  <div class="absolute-value-display" *ngIf="r.add !== null && r.add !== undefined">
+                    {{ r.add | signoPositivo }}
+                  </div>
                 </td>
                 
                 <!-- D.I.P. -->
@@ -211,6 +224,35 @@ import { MatIconModule } from '@angular/material/icon';
       box-shadow: 0 0 0 1px #ef4444 !important;
     }
 
+    /* Display absoluto para mostrar el valor formateado */
+    .absolute-value-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      font-size: 10px;
+      font-weight: 500;
+      color: #374151;
+      z-index: 1;
+    }
+
+    /* Posicionamiento relativo para las celdas que muestran valores formateados */
+    td:has(.absolute-value-display) {
+      position: relative;
+    }
+
+    /* Ocultar el input cuando hay valor (opcional, según preferencia) */
+    td:has(.absolute-value-display) .column-input {
+      color: transparent; /* Hace el texto del input transparente */
+      background: transparent; /* Fondo transparente */
+    }
+
+    td:has(.absolute-value-display) .column-input:focus {
+      color: #000; /* Mostrar texto al enfocar */
+      background: white; /* Fondo blanco al enfocar */
+    }
+
     /* Asegurar que los inputs ocupen todo el ancho de la celda */
     td {
       padding: 0 !important;
@@ -268,7 +310,7 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class RxFormComponent {
   @Input() filasRx: any[] = [];
-  @Output() filasRxChange = new EventEmitter<any[]>();
+  @Output() filasRxChange = new EventEmitter<any[]>();  
 
   // Rangos válidos
   private readonly RANGOS = {
