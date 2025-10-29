@@ -79,9 +79,9 @@ export interface CambiarEstatusDialogData {
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <mat-label>Tipo de laboratorio</mat-label>
             <mat-form-field appearance="outline" class="w-full">
-              <mat-label>Tipo de laboratorio</mat-label>
-              <mat-select [(ngModel)]="labTipo" required>
+              <mat-select [(ngModel)]="labTipo" (ngModelChange)="onLabTipoChange()" required>
                 <mat-option value="Interno">Interno</mat-option>
                 <mat-option value="Externo">Externo</mat-option>
               </mat-select>
@@ -90,9 +90,11 @@ export interface CambiarEstatusDialogData {
               </mat-error>
             </mat-form-field>
 
+            <mat-label>Nombre del laboratorio</mat-label>
             <mat-form-field appearance="outline" class="w-full">
-              <mat-label>Nombre del laboratorio (opcional)</mat-label>
-              <input matInput [(ngModel)]="labNombre" />
+              <input matInput [(ngModel)]="labNombre" [readonly]="labTipo !== ''" />
+              <mat-hint *ngIf="labTipo !== ''">                
+              </mat-hint>
             </mat-form-field>
           </div>
         </div>
@@ -144,7 +146,7 @@ export class CambiarEstatusDialog {
   suggestedNext: number;
 
   // Índice del estado "Enviada a laboratorio" (para validaciones)
-  private readonly ENVIADA_LABORATORIO_INDEX = 4;
+  private readonly ENVIADA_LABORATORIO_INDEX = 5;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: CambiarEstatusDialogData,
@@ -164,6 +166,17 @@ export class CambiarEstatusDialog {
       this.toStatus = this.data.allowed[0];
     } else {
       this.toStatus = data.fromStatus; // Mantener estado actual si no hay opciones
+    }
+  }
+
+  // Nuevo método para manejar el cambio de tipo de laboratorio
+  onLabTipoChange(): void {
+    if (this.labTipo === 'Interno') {
+      this.labNombre = 'Tlahuac';
+    } else if (this.labTipo === 'Externo') {
+      this.labNombre = 'Externo';
+    } else {
+      this.labNombre = '';
     }
   }
 

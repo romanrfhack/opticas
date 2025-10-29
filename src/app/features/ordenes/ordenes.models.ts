@@ -30,7 +30,7 @@ export const OrderStatusLabels: { [key in OrderStatus]: string } = {
   [OrderStatus.REGISTRADA]: 'Registrada',
   [OrderStatus.LISTAPARA_ENVIO]: 'Lista para envío',
   [OrderStatus.EN_TRANSITO_A_SUCURSAL]: 'En tránsito a sucursal',
-  [OrderStatus.RECIBIDA_EN_SUCURSAL]: 'Recibida en sucursal [X]',
+  [OrderStatus.RECIBIDA_EN_SUCURSAL]: 'Recibida en sucursal => lab',
   [OrderStatus.ENVIADA_A_LABORATORIO]: 'Enviada a laboratorio',
   [OrderStatus.LISTA_EN_LABORATORIO]: 'Lista en laboratorio',
   [OrderStatus.RECIBIDA_EN_SUCURSAL_CENTRAL]: 'Recibida en sucursal central',
@@ -63,6 +63,8 @@ export interface VisitaCostoRow {
   aCuenta?: number;
   resta?: number;
   fechaUltimaActualizacion?: string; // ISO
+  labTipo?: string;  
+  labNombre?: string;
 }
 
 export interface PagedResultCE<T> {

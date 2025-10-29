@@ -52,10 +52,7 @@ import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, 
             </p>
           </div>
 
-          <form [formGroup]="searchForm" class="relative">
-            <!-- INPUT MEJORADO - Sin línea divisora -->
-
-                        <!-- Search Combobox (Tailwind puro) -->
+          <form [formGroup]="searchForm" class="relative">                                    
             <div class="relative max-w-2xl mx-auto">
               <label for="search" class="sr-only">Buscar cliente</label>
               <div
@@ -188,6 +185,26 @@ import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, 
           <td mat-cell *matCellDef="let r">{{ mostrarEstado(r.estado) }}</td>
         </ng-container>
 
+        <!-- Nueva columna para Laboratorio -->
+        <ng-container matColumnDef="laboratorio">
+          <th mat-header-cell *matHeaderCellDef>Laboratorio</th>
+          <td mat-cell *matCellDef="let r">
+            <div *ngIf="r.labTipo" class="flex items-center gap-2">
+              <mat-icon 
+                [class.text-blue-500]="r.labTipo === 'Interno'"
+                [class.text-green-500]="r.labTipo === 'Externo'"
+                class="text-lg">
+                {{ r.labTipo === 'Interno' ? 'home' : 'business' }}
+              </mat-icon>
+              <span class="font-medium" 
+                    [class.text-blue-600]="r.labTipo === 'Interno'"
+                    [class.text-green-600]="r.labTipo === 'Externo'">
+                {{ r.labNombre }}
+              </span>
+            </div>
+          </td>
+        </ng-container>
+
         <ng-container matColumnDef="detalle">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let r">            
@@ -215,7 +232,12 @@ import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, 
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="cols"></tr>
-        <tr mat-row *matRowDef="let row; columns: cols;"></tr>
+        <tr mat-row 
+            *matRowDef="let row; columns: cols;" 
+            [class.fila-laboratorio]="row.labTipo"
+            [class.fila-laboratorio-interno]="row.labTipo === 'Interno'"
+            [class.fila-laboratorio-externo]="row.labTipo === 'Externo'">
+        </tr>
       </table>
 
       <mat-paginator [length]="total()" [pageSize]="pageSize()" [pageIndex]="page()-1"
@@ -223,6 +245,34 @@ import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, 
     </div>
   </div>
   `,
+  styles: [`
+    .fila-laboratorio {
+      background-color: rgba(6, 182, 212, 0.05);
+      border-left: 4px solid #06b6d4;
+    }
+    
+    .fila-laboratorio-interno {
+      background-color: rgba(59, 130, 246, 0.05);
+      border-left-color: #3b82f6;
+    }
+    
+    .fila-laboratorio-externo {
+      background-color: rgba(16, 185, 129, 0.05);
+      border-left-color: #10b981;
+    }
+    
+    .fila-laboratorio:hover {
+      background-color: rgba(6, 182, 212, 0.1);
+    }
+    
+    .fila-laboratorio-interno:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+    
+    .fila-laboratorio-externo:hover {
+      background-color: rgba(16, 185, 129, 0.1);
+    }
+  `]
 })
 export class CostosPageComponent {
   
@@ -232,7 +282,8 @@ export class CostosPageComponent {
   private snackBar = inject(MatSnackBar);
   private authService = inject(AuthService);
 
-  cols = ['fecha','paciente','usuario','sucursal','estado','detalle', 'acciones'];
+  // Agregar 'laboratorio' a las columnas
+  cols = ['fecha','paciente','usuario','sucursal','estado','laboratorio','detalle', 'acciones'];
   estados = Object.values(OrderStatus);
   
   private fb = inject(FormBuilder);    
@@ -286,7 +337,7 @@ export class CostosPageComponent {
       this.searchForm.controls.searchTerm.valueChanges.pipe(
         debounceTime(300),
         distinctUntilChanged(),
-        tap(() => this.selectedPatient.set(null)),     // <- clave para no “quedarse” en detalle
+        tap(() => this.selectedPatient.set(null)),     // <- clave para no "quedarse" en detalle
         filter((term: unknown) => typeof term === 'string'), // <- evita objetos del autocomplete
         switchMap((term: string) => {
           const q = term.trim();
@@ -525,6 +576,4 @@ allowedTransitions: Record<string, string[]> = {
   'Entregada al cliente': [],
   'Cancelada': []
 };
-
 }
-
