@@ -1,10 +1,10 @@
 // src/app/auth/auth.service.ts
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { catchError, tap } from 'rxjs/operators';
 import { ReauthModalComponent } from './reauth-modal.component';
 //import { ReauthModalComponent } from '../components/reauth-modal/reauth-modal.component';
 
@@ -91,12 +91,14 @@ export class AuthService {
     return this.http.put(`${this.base}/auth/me`, { FullName: body.fullName, PhoneNumber: body.phoneNumber ?? null });
   }
 
-  changePassword(body: { currentPassword: string; newPassword: string }) {
-    return this.http.post(`${this.base}/auth/change-password`, {
-      CurrentPassword: body.currentPassword,
-      NewPassword: body.newPassword
-    });
-  }
+  changePassword(changePasswordRequest: { currentPassword: string; newPassword: string }): Observable<any> {
+  return this.http.post(`${this.base}/auth/change-password`, changePasswordRequest).pipe(
+    catchError((error: HttpErrorResponse) => {
+      // Re-lanzamos el error para que el componente lo maneje
+      return throwError(() => error);
+    })
+  );
+}
 
   syncUserName(newName: string) {
     const raw = localStorage.getItem('auth'); if (!raw) return;

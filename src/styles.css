@@ -57,3 +57,21 @@ body {
 /* Material: item activo en el menú */
 .mdc-list-item.active { background: #f3f4f6; }  /* gray-100 */
 .mdc-list-item a { text-decoration: none; }
+
+/* En styles.css o en el archivo de estilos global */
+.snackbar-success {
+  background-color: #10b981 !important;
+  color: white !important;
+}
+
+.snackbar-error {
+  background-color: #ef4444 !important;
+  color: white !important;
+  white-space: pre-wrap; /* Permite saltos de línea */
+  max-width: 500px !important;
+}
+
+.snackbar-info {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}

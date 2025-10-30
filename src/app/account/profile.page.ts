@@ -12,9 +12,18 @@ import { AuthService } from '../auth/auth.service';
 import { UsersService } from '../admin/users/users.service';
 
 function matchPassword(group: AbstractControl): ValidationErrors | null {
-  const p1 = group.get('newPassword')?.value;
-  const p2 = group.get('confirm')?.value;
-  return p1 && p2 && p1 !== p2 ? { mismatch: true } : null;
+  const newPassword = group.get('newPassword');
+  const confirm = group.get('confirm');
+  
+  if (!newPassword || !confirm) return null;
+  
+  const p1 = newPassword.value;
+  const p2 = confirm.value;
+  
+  if (p1 && p2 && p1 !== p2) {
+    return { mismatch: true };
+  }
+  return null;
 }
 
 @Component({
@@ -74,12 +83,6 @@ function matchPassword(group: AbstractControl): ValidationErrors | null {
             <mat-error *ngIf="profileForm.controls.email.hasError('email')">Formato de email inválido</mat-error>
           </mat-form-field>
 
-          <mat-form-field appearance="fill" class="w-full md:col-span-2 custom-form-field">
-            <mat-label>Teléfono</mat-label>
-            <input matInput formControlName="phoneNumber" />
-            <mat-icon matPrefix class="prefix-icon">phone</mat-icon>
-          </mat-form-field>
-
           <div class="md:col-span-2 flex justify-end gap-3 pt-4">
             <button mat-stroked-button 
                     type="button" 
@@ -130,7 +133,8 @@ function matchPassword(group: AbstractControl): ValidationErrors | null {
                    formControlName="newPassword" 
                    required 
                    minlength="6"
-                   autocomplete="new-password" />
+                   autocomplete="new-password"
+                   (input)="onPasswordInput()" />
             <mat-icon matPrefix class="prefix-icon">password</mat-icon>
             <mat-error *ngIf="passForm.controls.newPassword.hasError('required')">Campo requerido</mat-error>
             <mat-error *ngIf="passForm.controls.newPassword.hasError('minlength')">Mínimo 6 caracteres</mat-error>
@@ -144,8 +148,54 @@ function matchPassword(group: AbstractControl): ValidationErrors | null {
                    required 
                    autocomplete="new-password" />
             <mat-icon matPrefix class="prefix-icon">check_circle</mat-icon>
+            <mat-error *ngIf="passForm.controls.confirm.hasError('required')">Campo requerido</mat-error>
             <mat-error *ngIf="passForm.hasError('mismatch')">Las contraseñas no coinciden</mat-error>
           </mat-form-field>
+
+          <!-- Requisitos de contraseña -->
+          <div class="md:col-span-2 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 class="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+              <mat-icon class="text-blue-600" style="width: 20px; height: 20px; font-size: 20px;">info</mat-icon>
+              Requisitos para la nueva contraseña:
+            </h4>
+            <ul class="text-sm text-blue-700 space-y-2">
+              <li class="flex items-center gap-2">
+                <mat-icon [class]="hasMinLength() ? 'text-green-500' : 'text-blue-500'" 
+                         style="width: 16px; height: 16px; font-size: 16px;">
+                  {{ hasMinLength() ? 'check_circle' : 'radio_button_unchecked' }}
+                </mat-icon>
+                Mínimo 6 caracteres
+              </li>
+              <li class="flex items-center gap-2">
+                <mat-icon [class]="hasDigit() ? 'text-green-500' : 'text-blue-500'" 
+                         style="width: 16px; height: 16px; font-size: 16px;">
+                  {{ hasDigit() ? 'check_circle' : 'radio_button_unchecked' }}
+                </mat-icon>
+                Al menos un número (0-9)
+              </li>
+              <li class="flex items-center gap-2">
+                <mat-icon [class]="hasLowercase() ? 'text-green-500' : 'text-blue-500'" 
+                         style="width: 16px; height: 16px; font-size: 16px;">
+                  {{ hasLowercase() ? 'check_circle' : 'radio_button_unchecked' }}
+                </mat-icon>
+                Al menos una letra minúscula (a-z)
+              </li>
+              <li class="flex items-center gap-2">
+                <mat-icon [class]="hasUppercase() ? 'text-green-500' : 'text-blue-500'" 
+                         style="width: 16px; height: 16px; font-size: 16px;">
+                  {{ hasUppercase() ? 'check_circle' : 'radio_button_unchecked' }}
+                </mat-icon>
+                Al menos una letra mayúscula (A-Z)
+              </li>
+              <li class="flex items-center gap-2">
+                <mat-icon [class]="hasSpecialChar() ? 'text-green-500' : 'text-blue-500'" 
+                         style="width: 16px; height: 16px; font-size: 16px;">
+                  {{ hasSpecialChar() ? 'check_circle' : 'radio_button_unchecked' }}
+                </mat-icon>
+                Al menos un carácter especial (!@#$%^&* etc.)
+              </li>
+            </ul>
+          </div>
 
           <div class="md:col-span-2 flex justify-end gap-3 pt-4">
             <button mat-flat-button 
@@ -162,6 +212,7 @@ function matchPassword(group: AbstractControl): ValidationErrors | null {
   </section>
   `,
   styles: [`
+    /* Tus estilos existentes se mantienen igual */
     :host { 
       display: block; 
       padding: 1rem;
@@ -226,7 +277,6 @@ function matchPassword(group: AbstractControl): ValidationErrors | null {
       transform: scale(1.1);
     }
 
-    /* Estilos mejorados para los campos de formulario */
     .custom-form-field {
       width: 100%;
     }
@@ -236,7 +286,6 @@ function matchPassword(group: AbstractControl): ValidationErrors | null {
       margin-right: 8px;
     }
 
-    /* Estilos para mat-form-field fill */
     .mat-form-field-appearance-fill .mat-form-field-flex {
       background-color: rgba(255, 255, 255, 0.9);
       border-radius: 8px;
@@ -275,7 +324,6 @@ function matchPassword(group: AbstractControl): ValidationErrors | null {
       height: 20px;
     }
 
-    /* Asegurar que no haya líneas no deseadas */
     .mat-form-field-appearance-fill .mat-form-field-infix {
       border-top: 0;
     }
@@ -340,6 +388,37 @@ export class ProfilePage {
         phoneNumber:  ''
       });
     }
+  }
+
+  // Métodos para verificar requisitos de contraseña
+  hasMinLength(): boolean {
+    const password = this.passForm.get('newPassword')?.value;
+    return password ? password.length >= 6 : false;
+  }
+
+  hasDigit(): boolean {
+    const password = this.passForm.get('newPassword')?.value;
+    return /\d/.test(password || '');
+  }
+
+  hasLowercase(): boolean {
+    const password = this.passForm.get('newPassword')?.value;
+    return /[a-z]/.test(password || '');
+  }
+
+  hasUppercase(): boolean {
+    const password = this.passForm.get('newPassword')?.value;
+    return /[A-Z]/.test(password || '');
+  }
+
+  hasSpecialChar(): boolean {
+    const password = this.passForm.get('newPassword')?.value;
+    return /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password || '');
+  }
+
+  onPasswordInput(): void {
+    // Forzar la detección de cambios para actualizar la vista
+    this.passForm.updateValueAndValidity();
   }
 
   resetProfile(): void {
@@ -409,7 +488,26 @@ export class ProfilePage {
           this.handleSuccess('Contraseña actualizada correctamente');
           this.passForm.reset();
         },
-        error: (error: any) => this.handleError(error?.error?.message || 'Error al actualizar la contraseña')
+        error: (error: any) => {
+          let errorMessage = 'Error al actualizar la contraseña';
+          
+          if (error?.error?.message) {
+            errorMessage = error.error.message;
+          } else if (error?.error?.errors) {
+            const errorMessages = error.error.errors;
+            if (Array.isArray(errorMessages)) {
+              errorMessage = errorMessages.join('\n');
+            } else if (typeof errorMessages === 'string') {
+              errorMessage = errorMessages;
+            }
+          } else if (error?.message) {
+            errorMessage = error.message;
+          } else if (typeof error === 'string') {
+            errorMessage = error;
+          }
+
+          this.handleError(errorMessage);
+        }
       });
   }
 
@@ -419,20 +517,35 @@ export class ProfilePage {
     this.showMessage(message, 'success');
   }
 
-  private handleError(errorMessage: string): void {
+  private handleError(errorMessage: string | { message: string; errors?: string[] }): void {
     this.savingProfile.set(false);
     this.savingPass.set(false);
-    this.showMessage(errorMessage, 'error');
+    
+    let finalMessage = 'Ha ocurrido un error';
+    
+    if (typeof errorMessage === 'string') {
+      finalMessage = errorMessage;
+    } else if (errorMessage?.message) {
+      finalMessage = errorMessage.message;
+      if (errorMessage.errors && Array.isArray(errorMessage.errors)) {
+        finalMessage += '\n' + errorMessage.errors.join('\n');
+      }
+    }
+    
+    this.showMessage(finalMessage, 'error');
   }
 
   private showMessage(message: string, type: 'success' | 'error' | 'info'): void {
+    const panelClass = [
+      type === 'success' ? 'snackbar-success' :
+      type === 'error' ? 'snackbar-error' : 'snackbar-info'
+    ];
+
     this.snackBar.open(message, 'Cerrar', {
-      duration: 5000,
-      panelClass: [
-        type === 'success' ? 'bg-green-500' :
-        type === 'error' ? 'bg-red-500' : 'bg-blue-500',
-        'text-white'
-      ]
+      duration: type === 'error' ? 10000 : 5000, // Más tiempo para errores
+      panelClass: panelClass,
+      verticalPosition: 'top',
+      horizontalPosition: 'center'
     });
   }
 
