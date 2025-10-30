@@ -81,6 +81,13 @@ import { CompactSucursalSwitcherComponent } from '../../shared/sucursal-switcher
           <mat-icon [style.color]="'#06b6d4'">groups</mat-icon><span>Clientes</span>
         </a>
         </div>
+        <div *ngIf="isAdmin()">
+        <a routerLink="/admin/usuarios" routerLinkActive="bg-cyan-50 text-cyan-600"
+           class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
+          <mat-icon [style.color]="'#06b6d4'">admin_panel_settings</mat-icon><span>Usuarios</span>
+        </a>
+        </div>
+        
         <!-- <a routerLink="/historias" routerLinkActive="bg-cyan-50 text-cyan-600"
            class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-cyan-50 hover:text-cyan-600 transition">
           <mat-icon [style.color]="'#06b6d4'">visibility</mat-icon><span>Historias</span>

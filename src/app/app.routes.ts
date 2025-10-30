@@ -25,7 +25,7 @@ export const routes: Routes = [
       // dentro del shell, si navegan a '', manda a dashboard
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'admin/usuarios', canMatch: [roleGuard(['Admin'])],
-        loadComponent: () => import('./admin/users/users.page').then(m => m.UsersPage) },
+        loadComponent: () => import('./admin/users/users.component').then(m => m.UsersComponent) },
       { path: 'perfil', canActivate: [authGuard],
         loadComponent: () => import('./account/profile.page').then(m => m.ProfilePage) },      
       { path: 'dashboard', canActivate: [authGuard],
