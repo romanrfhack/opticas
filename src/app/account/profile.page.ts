@@ -83,6 +83,26 @@ function matchPassword(group: AbstractControl): ValidationErrors | null {
             <mat-error *ngIf="profileForm.controls.email.hasError('email')">Formato de email inválido</mat-error>
           </mat-form-field>
 
+          <mat-form-field appearance="fill" class="w-full custom-form-field">
+            <mat-label>Teléfono</mat-label>
+            <input
+              matInput
+              formControlName="phoneNumber"
+              type="tel"
+              maxlength="12"                   
+              placeholder="55 1234 5678"
+              (keypress)="onlyNumbers($event)"
+              (input)="formatPhone($event)"
+            >
+            <mat-icon matPrefix class="prefix-icon">phone</mat-icon>
+            <mat-error *ngIf="profileForm.get('phoneNumber')?.hasError('required')">
+              El número de teléfono es obligatorio.
+            </mat-error>
+            <mat-error *ngIf="profileForm.get('phoneNumber')?.hasError('pattern')">
+              Debe contener exactamente 10 dígitos numéricos.
+            </mat-error>
+          </mat-form-field>
+
           <div class="md:col-span-2 flex justify-end gap-3 pt-4">
             <button mat-stroked-button 
                     type="button" 
@@ -354,7 +374,7 @@ export class ProfilePage {
   profileForm = this.fb.group({
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    phoneNumber: ['']
+    phoneNumber: ['',  [Validators.required, Validators.pattern(/^\d{2}\s\d{4}\s\d{4}$/)]],
   });
 
   passForm = this.fb.group({
@@ -551,5 +571,23 @@ export class ProfilePage {
 
   goBack(): void {
     history.back();
+  }
+
+  onlyNumbers(event: KeyboardEvent) {
+    const charCode = event.charCode;
+    if (charCode < 48 || charCode > 57) {
+      event.preventDefault();
+    }
+  }
+
+  formatPhone(event: any) {
+    let input = event.target.value.replace(/\D/g, '');
+    if (input.length > 2 && input.length <= 6) {
+      input = input.replace(/^(\d{2})(\d+)/, '$1 $2');
+    } else if (input.length > 6) {
+      input = input.replace(/^(\d{2})(\d{4})(\d+)/, '$1 $2 $3');
+    }
+    event.target.value = input;
+    this.profileForm.get('phoneNumber')?.setValue(input, { emitEvent: false });
   }
 }

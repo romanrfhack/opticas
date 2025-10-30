@@ -43,11 +43,12 @@ export const routes: Routes = [
       { path: 'historias', canActivate: [authGuard],
         loadComponent: () => import('./features/historias/historias.page').then(m => m.HistoriasPage) },
       { path: 'visitas/:id', canActivate: [authGuard],
-          loadComponent: () => import('./clinica/visita-detalle.component').then(m => m.VisitaDetalleComponent) },
-      // { path: 'ordenes', canActivate: [authGuard],
-      //   loadComponent: () => import('./features/ordenes/ordenes.page').then(m => m.OrdenesPage) },      
+          loadComponent: () => import('./clinica/visita-detalle.component').then(m => m.VisitaDetalleComponent) },      
       { path: 'ordenes', canActivate: [authGuard],
         loadComponent: () => import('./features/ordenes/ordenes.page').then(m => m.CostosPageComponent)
+      },
+      { path: 'admin/soporte', canActivate: [authGuard],
+        loadComponent: () => import('./features/soporte/soporte-admin.component').then(m => m.SoporteAdminComponent)
       },
       { path: '**', loadComponent: () => import('./features/not-found/not-found.page').then(m => m.NotFoundPage) },
     ]

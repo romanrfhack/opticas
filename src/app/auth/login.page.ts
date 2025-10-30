@@ -43,7 +43,7 @@ import { AuthService } from './auth.service';
 
         <div class="flex items-center justify-between text-sm">
           <a class="text-[#06b6d4] hover:underline cursor-pointer" (click)="goForgot()">¿Olvidó su contraseña?</a>
-          <a class="text-gray-600 hover:underline cursor-pointer" (click)="goSoporte()">Soporte técnico</a>
+          <!-- <a class="text-gray-600 hover:underline cursor-pointer" (click)="goSoporte()">Soporte técnico</a> -->
         </div>
 
         <button type="submit"
