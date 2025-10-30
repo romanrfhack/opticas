@@ -8,12 +8,13 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { EnviarLabDialog } from '../enviar-lab.dialog';
 import { OrdenPagosComponent } from '../../features/ordenes/orden-pagos.component';
 import { TotalesCobro } from '../../features/ordenes/ordenes.models';
+import { SignoPositivoPipe } from '../../shared/tools/signo-positivo.pipe';
 
 
 @Component({
   standalone: true,
   selector: 'app-visita-detalle-modal',
-  imports: [CommonModule, MatDialogModule, MatIconModule, MatSnackBarModule, OrdenPagosComponent],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatSnackBarModule, OrdenPagosComponent, SignoPositivoPipe],
   template: `
     <div class="modal-container   rounded-2xl shado xl max-h-[95vh] overflow-hidden flex flex-col">
 
@@ -167,12 +168,12 @@ import { TotalesCobro } from '../../features/ordenes/ordenes.models';
                     <tbody class="bg-white divide-y divide-gray-200">
                       <tr *ngFor="let r of data.rx" class="hover:bg-gray-50 transition-colors">
                         <td class="px-2 py-2 whitespace-nowrap text-sm font-medium text-cyan-500">{{ r.distancia }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.ojo }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.esf ?? '-' }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.cyl ?? '-' }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.eje ?? '-' }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.add ?? '-' }}</td>
-                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.dip ?? '-' }}</td>
+                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.ojo  }}</td>
+                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.esf | signoPositivo }}</td>
+                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.cyl | signoPositivo }}</td>
+                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.eje  }}</td>
+                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.add  }}</td>
+                        <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.dip  }}</td>
                         <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{{ r.altOblea ?? '-' }}</td>
                       </tr>
                       <tr *ngIf="!data.rx || data.rx.length === 0">

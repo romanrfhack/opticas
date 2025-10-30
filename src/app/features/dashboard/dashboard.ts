@@ -1,14 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Subject, takeUntil, forkJoin } from 'rxjs';
+import { forkJoin, distinctUntilChanged, switchMap, startWith, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { DashboardService, DashboardKpis, PatientAttendance, PaymentMethods, OrderStatus, SalesByCategory, MonthlyRevenue, DashboardFilters } from '../../core/dashboard.service';
 import { BranchesService } from '../../core/branches.service';
 
 interface KPI {
   title: string;
   value: number;
-  change: number; // percentage
+  change: number;
   trend: 'up' | 'down' | 'stable';
   icon: string;
 }
@@ -21,25 +22,63 @@ interface Branch {
 
 @Component({
   selector: 'app-dashboard',
+  standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.css',  
+  styleUrl: './dashboard.css'
 })
-export class DashboardComponent implements OnInit, OnDestroy {
-  filterForm: FormGroup;
-  Math = Math;
-  
-  // Servicios
+export class DashboardComponent {
+  private fb = inject(FormBuilder);
   private branchesSvc = inject(BranchesService);
   private dashboardService = inject(DashboardService);
-  private fb = inject(FormBuilder);
-  
-  // Sucursales - inicialmente vacío, se cargan desde el servicio
-  branches: Branch[] = [
-    { id: 'all', nombre: 'Todas las sucursales' }
-  ];
 
-  periods = [
+  // ---------------- Signals ----------------
+  branches = signal<Branch[]>([{ id: 'all', nombre: 'Todas las sucursales' }]);
+  kpis = signal<KPI[]>([]);
+  loading = signal(false);
+  loadingBranches = signal(false);
+
+  // Formulario reactivo
+  filterForm: FormGroup = this.fb.group({
+    period: ['week'],
+    startDate: [null],
+    endDate: [null],
+    branchId: ['all']
+  });
+
+  // ---------------- Datos para gráficas ----------------
+  patientAttendanceData = signal({
+    labels: [] as string[],
+    datasets: [
+      { label: 'Total', data: [] as number[], backgroundColor: '#4CAF50' },
+      { label: 'Nuevos', data: [] as number[], backgroundColor: '#2196F3' }
+    ]
+  });
+
+  paymentMethodsData = signal({
+    labels: [] as string[],
+    datasets: [{ data: [] as number[], backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'] }]
+  });
+
+  orderStatusData = signal({
+    labels: [] as string[],
+    datasets: [{ data: [] as number[], backgroundColor: ['#FF9F40', '#FF6384', '#4BC0C0', '#9966FF', '#FF6384', '#36A2EB', '#4CAF50', '#9C27B0'] }]
+  });
+
+  salesByCategoryData = signal({
+    labels: [] as string[],
+    datasets: [{ data: [] as number[], backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'] }]
+  });
+
+  monthlyRevenueData = signal({
+    labels: [] as string[],
+    datasets: [
+      { label: '2024', data: [] as number[], borderColor: '#36A2EB', fill: false },
+      { label: '2023', data: [] as number[], borderColor: '#FF6384', fill: false }
+    ]
+  });
+
+  readonly periods = [
     { value: 'day', label: 'Hoy' },
     { value: 'week', label: 'Esta semana' },
     { value: 'month', label: 'Este mes' },
@@ -47,134 +86,85 @@ export class DashboardComponent implements OnInit, OnDestroy {
     { value: 'custom', label: 'Personalizado' }
   ];
 
-  // Datos reales
-  kpis: KPI[] = [];
-  
-  patientAttendanceData = {
-    labels: [] as string[],
-    datasets: [
-      { label: 'Total', data: [] as number[], backgroundColor: '#4CAF50' },
-      { label: 'Nuevos', data: [] as number[], backgroundColor: '#2196F3' }
-    ]
-  };
-
-  paymentMethodsData = {
-    labels: [] as string[],
-    datasets: [{ data: [] as number[], backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'] }]
-  };
-
-  orderStatusData = {
-    labels: [] as string[],
-    datasets: [{ data: [] as number[], backgroundColor: ['#FF9F40', '#FF6384', '#4BC0C0', '#9966FF', '#FF6384', '#36A2EB', '#4CAF50', '#9C27B0'] }]
-  };
-
-  salesByCategoryData = {
-    labels: [] as string[],
-    datasets: [{ data: [] as number[], backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'] }]
-  };
-
-  monthlyRevenueData = {
-    labels: [] as string[],
-    datasets: [
-      { label: '2024', data: [] as number[], borderColor: '#36A2EB', fill: false },
-      { label: '2023', data: [] as number[], borderColor: '#FF6384', fill: false }
-    ]
-  };
-
-  loading = false;
-  loadingBranches = false;
-  private destroy$ = new Subject<void>();
-
+  // ---------------- Constructor ----------------
   constructor() {
-    this.filterForm = this.fb.group({
-      period: ['week'],
-      startDate: [null],
-      endDate: [null],
-      branchId: ['all']
+    // 1️⃣ Cargar sucursales
+    this.loadBranches();
+
+    // 2️⃣ Efecto reactivo: escucha cambios del formulario
+    effect(() => {
+      const sub = this.filterForm.valueChanges
+        .pipe(
+          startWith(this.filterForm.value),
+          distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
+          switchMap(() => {
+            this.loading.set(true);
+            const filters = this.getCurrentFilters();
+
+            // 🔐 Control de errores individual
+            return forkJoin({
+              kpis: this.dashboardService.getKpis(filters).pipe(catchError(() => of(null))),
+              patientAttendance: this.dashboardService.getPatientAttendance(filters).pipe(catchError(() => of(null))),
+              paymentMethods: this.dashboardService.getPaymentMethods(filters).pipe(catchError(() => of(null))),
+              orderStatus: this.dashboardService.getOrderStatus(filters).pipe(catchError(() => of(null))),
+              salesByCategory: this.dashboardService.getSalesByCategory(filters).pipe(catchError(() => of(null))),
+              monthlyRevenue: this.dashboardService.getMonthlyRevenue(filters).pipe(catchError(() => of(null)))
+            });
+          })
+        )
+        .subscribe({
+          next: results => {
+            if (results.kpis) this.updateKpis(results.kpis);
+            if (results.patientAttendance) this.updatePatientAttendance(results.patientAttendance);
+            if (results.paymentMethods) this.updatePaymentMethods(results.paymentMethods);
+            if (results.orderStatus) this.updateOrderStatus(results.orderStatus);
+            if (results.salesByCategory) this.updateSalesByCategory(results.salesByCategory);
+            if (results.monthlyRevenue) this.updateMonthlyRevenue(results.monthlyRevenue);
+            this.loading.set(false);
+          },
+          error: err => {
+            console.error('Error general del dashboard:', err);
+            this.loading.set(false);
+            this.loadDemoData();
+          }
+        });
+
+      return () => sub.unsubscribe();
     });
   }
 
-  ngOnInit() {
-    this.loadBranches();
-    
-    // Escuchar cambios en los filtros
-    this.filterForm.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.onFilterChange();
-      });
-  }
-
-  ngOnDestroy() {
-    this.destroy$.next();
-    this.destroy$.complete();
-  }
-
-  loadBranches() {
-    this.loadingBranches = true;
-    this.branchesSvc.list().pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (branches) => {
-        // Agregar las sucursales reales después de "Todas las sucursales"
-        const realBranches = branches.map(b => ({
+  // ---------------- Funciones principales ----------------
+  private loadBranches() {
+    this.loadingBranches.set(true);
+    this.branchesSvc.list().subscribe({
+      next: branches => {
+        const realBranches = branches.map((b: any) => ({
           id: b.id,
           nombre: b.nombre,
           activa: b.activa ?? true
         }));
-        
-        this.branches = [
-          { id: 'all', nombre: 'Todas las sucursales' },
-          ...realBranches
-        ];
-        this.loadingBranches = false;
-        
-        // Cargar datos del dashboard una vez que tenemos las sucursales
-        this.loadDashboardData();
+        this.branches.set([{ id: 'all', nombre: 'Todas las sucursales' }, ...realBranches]);
+        this.loadingBranches.set(false);
       },
-      error: (error) => {
-        console.error('Error loading branches', error);
-        this.loadingBranches = false;
-        // Intentar cargar dashboard incluso si falla la carga de sucursales
-        this.loadDashboardData();
+      error: err => {
+        console.error('Error loading branches', err);
+        this.loadingBranches.set(false);
       }
     });
   }
 
-  loadDashboardData() {
-    this.loading = true;
-    const filters = this.getCurrentFilters();
-
-    forkJoin({
-      kpis: this.dashboardService.getKpis(filters),
-      patientAttendance: this.dashboardService.getPatientAttendance(filters),
-      paymentMethods: this.dashboardService.getPaymentMethods(filters),
-      orderStatus: this.dashboardService.getOrderStatus(filters),
-      salesByCategory: this.dashboardService.getSalesByCategory(filters),
-      monthlyRevenue: this.dashboardService.getMonthlyRevenue(filters)
-    })
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (results) => {
-        this.updateKpis(results.kpis);
-        this.updatePatientAttendance(results.patientAttendance);
-        this.updatePaymentMethods(results.paymentMethods);
-        this.updateOrderStatus(results.orderStatus);
-        this.updateSalesByCategory(results.salesByCategory);
-        this.updateMonthlyRevenue(results.monthlyRevenue);
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error loading dashboard data:', error);
-        this.loading = false;
-        // Mantener datos demo en caso de error
-        this.loadDemoData();
-      }
-    });
+  private getCurrentFilters(): DashboardFilters {
+    const f = this.filterForm.value;
+    return {
+      period: f.period,
+      startDate: f.startDate,
+      endDate: f.endDate,
+      branchId: f.branchId
+    };
   }
 
   private updateKpis(kpisData: DashboardKpis) {
-    this.kpis = [
+    const list: KPI[] = [
       {
         title: 'Pacientes Atendidos',
         value: kpisData.patientsAttended.value,
@@ -218,47 +208,48 @@ export class DashboardComponent implements OnInit, OnDestroy {
         icon: 'local_shipping'
       }
     ];
+    this.kpis.set(list);
   }
 
   private updatePatientAttendance(data: PatientAttendance) {
-    this.patientAttendanceData = {
+    this.patientAttendanceData.set({
       labels: data.labels,
       datasets: [
         { label: 'Total', data: data.totalPatients, backgroundColor: '#4CAF50' },
         { label: 'Nuevos', data: data.newPatients, backgroundColor: '#2196F3' }
       ]
-    };
+    });
   }
 
   private updatePaymentMethods(data: PaymentMethods) {
-    this.paymentMethodsData = {
+    this.paymentMethodsData.set({
       labels: data.labels,
       datasets: [{ data: data.data, backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'] }]
-    };
+    });
   }
 
   private updateOrderStatus(data: OrderStatus) {
-    this.orderStatusData = {
+    this.orderStatusData.set({
       labels: data.labels,
       datasets: [{ data: data.data, backgroundColor: ['#FF9F40', '#FF6384', '#4BC0C0', '#9966FF', '#FF6384', '#36A2EB', '#4CAF50', '#9C27B0'] }]
-    };
+    });
   }
 
   private updateSalesByCategory(data: SalesByCategory) {
-    this.salesByCategoryData = {
+    this.salesByCategoryData.set({
       labels: data.labels,
       datasets: [{ data: data.data, backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'] }]
-    };
+    });
   }
 
   private updateMonthlyRevenue(data: MonthlyRevenue) {
-    this.monthlyRevenueData = {
+    this.monthlyRevenueData.set({
       labels: data.labels,
       datasets: [
         { label: new Date().getFullYear().toString(), data: data.currentYear, borderColor: '#36A2EB', fill: false },
         { label: (new Date().getFullYear() - 1).toString(), data: data.previousYear, borderColor: '#FF6384', fill: false }
       ]
-    };
+    });
   }
 
   private getTrend(change: number): 'up' | 'down' | 'stable' {
@@ -267,73 +258,49 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return 'stable';
   }
 
-  private getCurrentFilters(): DashboardFilters {
-    const formValue = this.filterForm.value;
-    return {
-      period: formValue.period,
-      startDate: formValue.startDate,
-      endDate: formValue.endDate,
-      branchId: formValue.branchId
-    };
-  }
-
-  onFilterChange() {
-    if (this.filterForm.valid) {
-      this.loadDashboardData();
-    }
-  }
-
-  exportReport() {
-    console.log('Exportando reporte...');
-    // Lógica para exportar
-  }
-
-  getRandomHeight(): number {
-    return Math.random() * 100;
-  }
-
-  // Método de respaldo con datos demo
+  // ---------------- Demo y utilidades ----------------
   private loadDemoData() {
-    this.kpis = [
+    this.kpis.set([
       { title: 'Pacientes Atendidos', value: 156, change: 12, trend: 'up', icon: 'people' },
       { title: 'Nuevos Pacientes', value: 23, change: 5, trend: 'up', icon: 'person_add' },
       { title: 'Órdenes Cobradas', value: 89, change: -2, trend: 'down', icon: 'payments' },
       { title: 'Ingresos Totales', value: 125430, change: 8, trend: 'up', icon: 'attach_money' },
       { title: 'Enviadas a Laboratorio', value: 45, change: 15, trend: 'up', icon: 'send' },
       { title: 'Entregadas a Clientes', value: 38, change: 3, trend: 'up', icon: 'local_shipping' }
-    ];
+    ]);
   }
 
-  // Métodos para gradientes
   getPaymentMethodsGradient(): string {
-    if (this.paymentMethodsData.datasets[0].data.length === 0) return '';
-    
-    const total = this.paymentMethodsData.datasets[0].data.reduce((a, b) => a + b, 0);
+    const d = this.paymentMethodsData();
+    if (d.datasets[0].data.length === 0) return '';
+
+    const total = d.datasets[0].data.reduce((a, b) => a + b, 0);
     let currentPercent = 0;
-    let gradientParts = [];
-    
-    for (let i = 0; i < this.paymentMethodsData.datasets[0].data.length; i++) {
-      const percent = (this.paymentMethodsData.datasets[0].data[i] / total) * 100;
-      gradientParts.push(`${this.paymentMethodsData.datasets[0].backgroundColor[i]} ${currentPercent}% ${currentPercent + percent}%`);
+    const gradientParts: string[] = [];
+
+    for (let i = 0; i < d.datasets[0].data.length; i++) {
+      const percent = (d.datasets[0].data[i] / total) * 100;
+      gradientParts.push(`${d.datasets[0].backgroundColor[i]} ${currentPercent}% ${currentPercent + percent}%`);
       currentPercent += percent;
     }
-    
+
     return `conic-gradient(${gradientParts.join(', ')})`;
   }
 
   getOrderStatusGradient(): string {
-    if (this.orderStatusData.datasets[0].data.length === 0) return '';
-    
-    const total = this.orderStatusData.datasets[0].data.reduce((a, b) => a + b, 0);
+    const d = this.orderStatusData();
+    if (d.datasets[0].data.length === 0) return '';
+
+    const total = d.datasets[0].data.reduce((a, b) => a + b, 0);
     let currentPercent = 0;
-    let gradientParts = [];
-    
-    for (let i = 0; i < this.orderStatusData.datasets[0].data.length; i++) {
-      const percent = (this.orderStatusData.datasets[0].data[i] / total) * 100;
-      gradientParts.push(`${this.orderStatusData.datasets[0].backgroundColor[i]} ${currentPercent}% ${currentPercent + percent}%`);
+    const gradientParts: string[] = [];
+
+    for (let i = 0; i < d.datasets[0].data.length; i++) {
+      const percent = (d.datasets[0].data[i] / total) * 100;
+      gradientParts.push(`${d.datasets[0].backgroundColor[i]} ${currentPercent}% ${currentPercent + percent}%`);
       currentPercent += percent;
     }
-    
+
     return `conic-gradient(${gradientParts.join(', ')})`;
   }
 }

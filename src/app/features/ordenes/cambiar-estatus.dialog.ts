@@ -92,7 +92,7 @@ export interface CambiarEstatusDialogData {
 
             <mat-label>Nombre del laboratorio</mat-label>
             <mat-form-field appearance="outline" class="w-full">
-              <input matInput [(ngModel)]="labNombre" [readonly]="labTipo !== ''" />
+              <input matInput [(ngModel)]="labNombre"/>
               <mat-hint *ngIf="labTipo !== ''">                
               </mat-hint>
             </mat-form-field>

@@ -13,32 +13,23 @@ import { VisitaDetalleModalComponent } from '../../clinica/components/visita-det
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CambiarEstatusDialog, CambiarEstatusDialogData } from './cambiar-estatus.dialog';
-import { Paciente, PacienteGridItem, PacienteLite } from '../../core/models/clinica.models';
+import { PacienteGridItem, PacienteLite } from '../../core/models/clinica.models';
 import { AuthService } from '../../auth/auth.service';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { PacientesService } from '../../core/pacientes.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
+import { OrderStatusTimelineComponent } from './order-status-timeline.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, MatTableModule, MatPaginatorModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
+  imports: [CommonModule, OrderStatusTimelineComponent, MatTableModule, MatPaginatorModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatIconModule],
   selector: 'app-costos-page',
   template: `
   <div class="p-4 space-y-4">
     <h1 *ngIf="isAdmin()" class="text-2xl font-semibold">Ordenes — Todas las sucursales</h1>
     <h1 *ngIf="isEncargado()" class="text-2xl font-semibold">Ordenes — Mi sucursal</h1>
     <h1 *ngIf="isMensajero()" class="text-2xl font-semibold">Ordenes por recoger/entregar</h1>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">      
-      <!-- <mat-form-field appearance="outline">
-        <mat-label>Estado</mat-label>
-        <mat-select (selectionChange)="onEstado($event.value)">
-          <mat-option [value]="''">Todos</mat-option>
-          <mat-option *ngFor="let e of estados" [value]="e">{{e}}</mat-option>
-        </mat-select>
-      </mat-form-field> -->
-    </div>
 
     <!-- Panel de Búsqueda Principal -->
       <div class="bg-white/20 bg-blue-500/20-md border border-white/30">
@@ -158,6 +149,24 @@ import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, 
         </div>
       </div>
 
+      <div class="p-10 space-y-10">    
+
+    <!-- Versión horizontal -->
+    <div>
+      <h2 class="text-lg font-semibold mb-2 text-gray-700">Flujo Horizontal</h2>
+      <app-order-status-timeline 
+        [currentStatus]="currentOrderStatus" 
+        orientation="horizontal">
+      </app-order-status-timeline>
+    </div>
+
+    <div class="flex justify-center space-x-2">
+      <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" (click)="prevStatus()">◀ Anterior</button>
+      <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" (click)="nextStatus()">Siguiente ▶</button>
+    </div>
+
+  </div>
+
     <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mb-8">
       <table mat-table [dataSource]="items()" class="w-full">
         <ng-container matColumnDef="fecha">
@@ -234,6 +243,13 @@ import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, 
         <tr mat-header-row *matHeaderRowDef="cols"></tr>
         <tr mat-row 
             *matRowDef="let row; columns: cols;" 
+            (click)="onRowSelect(row)"
+            [class.bg-blue-50]="selectedRow?.id === row.id"
+            [class.border-l-4]="selectedRow?.id === row.id"
+            [class.border-blue-500]="selectedRow?.id === row.id"
+            [class.cursor-pointer]="true"
+            [class.hover:bg-blue-50]="true"
+            [class.transition-colors]="true"
             [class.fila-laboratorio]="row.labTipo"
             [class.fila-laboratorio-interno]="row.labTipo === 'Interno'"
             [class.fila-laboratorio-externo]="row.labTipo === 'Externo'">
@@ -282,6 +298,9 @@ export class CostosPageComponent {
   private snackBar = inject(MatSnackBar);
   private authService = inject(AuthService);
 
+  currentOrderStatus = OrderStatus.CREADA;
+  selectedRow: VisitaCostoRow | null = null;
+
   // Agregar 'laboratorio' a las columnas
   cols = ['fecha','paciente','usuario','sucursal','estado','laboratorio','detalle', 'acciones'];
   estados = Object.values(OrderStatus);
@@ -326,19 +345,31 @@ export class CostosPageComponent {
   search = signal<string>('');
   estado = signal<string>('');
   isAdmin = computed(() => !!this.authService.user()?.roles?.includes('Admin'));
-  isEncargado = computed(() => !!this.authService.user()?.roles?.includes('Encargado'));
-  isMensajero = computed(() => !!this.authService.user()?.roles?.includes('Mensajero'));
-  estadosUpdateAdmin = [0,1,2,3,4,5,6,7,8];//todos
-  estadosUpdateEncargado = [0,1,3,4,5,6];
-  estadosUpdateMensajero = [2,3];
+  isEncargado = computed(() => !!this.authService.user()?.roles?.includes('Encargado de Sucursal'));
+  isMensajero = computed(() => !!this.authService.user()?.roles?.includes('Mensajero'));  
 
-  constructor() {
-      // 🔧 Búsqueda en tiempo real robusta: salir de vista individual al teclear y filtrar valores no-string
+  estadosUpdateEncargado = [
+    OrderStatus.CREADA,  
+    OrderStatus.REGISTRADA, 
+    OrderStatus.EN_TRANSITO_A_SUCURSAL_MATRIZ, 
+    OrderStatus.RECIBIDA_EN_SUCURSAL_MATRIZ, 
+    OrderStatus.ENVIADA_A_LABORATORIO, 
+    OrderStatus.EN_TRANSITO_DE_LABORATORIO_A_SUCURSAL_MATRIZ,
+    OrderStatus.EN_TRANSITO_A_SUCURSAL_ORIGEN,
+    OrderStatus.RECIBIDA_EN_SUCURSAL_ORIGEN,
+    OrderStatus.ENTREGADA_AL_CLIENTE
+  ];
+  estadosUpdateMensajero = [
+    OrderStatus.LISTAPARA_ENVIO,
+    OrderStatus.LISTA_EN_LABORATORIO,
+    OrderStatus.RECIBIDA_LISTA_EN_SUCURSAL_MATRIZ];
+
+  constructor() {      
       this.searchForm.controls.searchTerm.valueChanges.pipe(
         debounceTime(300),
         distinctUntilChanged(),
-        tap(() => this.selectedPatient.set(null)),     // <- clave para no "quedarse" en detalle
-        filter((term: unknown) => typeof term === 'string'), // <- evita objetos del autocomplete
+        tap(() => this.selectedPatient.set(null)),
+        filter((term: unknown) => typeof term === 'string'),
         switchMap((term: string) => {
           const q = term.trim();
           if (q.length >= 2) {
@@ -364,7 +395,7 @@ export class CostosPageComponent {
     this.searchForm.controls.searchTerm.setValue('');
     this.suggestedPatients.set([]);
     this.activeIndex = -1;
-    this.open = true; // opcional: deja el dropdown listo para nuevos resultados
+    this.open = true;
   }
 
   loadAllPatients() {
@@ -404,7 +435,6 @@ export class CostosPageComponent {
     this.load();
   }
 
-
   onEstado(v: string) {
     this.page.set(1);
     this.estado.set(v);
@@ -429,28 +459,23 @@ export class CostosPageComponent {
       });
     }
 
-    mostrarEstado(estadoIndex: number): string {
-    // Validar que el índice esté dentro del rango del array
+    mostrarEstado(estadoIndex: number): string {    
     if (estadoIndex >= 0 && estadoIndex < STATUS_FLOW.length) {
       return OrderStatusLabels[STATUS_FLOW[estadoIndex]];
     }
-    
-    // Manejar casos donde el índice no es válido
+        
     console.warn(`Índice de estado inválido: ${estadoIndex}`);
     return 'Desconocido';
   }
-
-  // En tu componente padre
-    openStatusDialog(visita: any) {                  
-      // Calcular estados permitidos (solo el siguiente en este caso)
+  
+    openStatusDialog(visita: any) {                        
       const allowedStatuses = [visita.estado + 1];
-
       const dialogRef = this.dialog.open(CambiarEstatusDialog, {
         width: '600px',
         data: {
           visitaId: visita.id,
-          fromStatus: visita.estado, 
-          allowed: allowedStatuses, // Array de 
+          fromStatus: visita.estado,
+          allowed: allowedStatuses,
           usuarioNombre: visita.usuarioNombre,
           fecha: visita.fechaUltimaActualizacion || visita.fecha,
           Paciente: visita.paciente          
@@ -458,14 +483,12 @@ export class CostosPageComponent {
       });
 
       dialogRef.afterClosed().subscribe(result => {
-        if (result) {
-          // Result contiene toStatus como NÚMERO, listo para enviar al backend
+        if (result) {          
           this.cambiarEstatus(visita.id, result);
         }
       });
     }
-
-    // Alias que usa el template en español
+    
     abrirCambiarEstatus(visita: any) {
       console.log("Abrir cambiar estatus para visita:", visita);
       this.openStatusDialog(visita);
@@ -475,8 +498,7 @@ export class CostosPageComponent {
       console.log("Validando si puede editar estatus de visita:", visita);
       let puedeEditar = false;
       let rolUsuario = this.authService.user()?.roles || [];
-
-      // Coerce visita.estado to a numeric value in a safe way
+      
       const estadoNum = typeof visita.estado === 'number'
         ? visita.estado
         : (typeof visita.estado === 'string' && visita.estado !== '' ? parseInt(visita.estado, 10) : NaN);
@@ -487,14 +509,12 @@ export class CostosPageComponent {
         puedeEditar = Number.isFinite(estadoNum) ? this.estadosUpdateEncargado.includes(estadoNum) : false;
       } else if (rolUsuario.includes('Mensajero')) {
         puedeEditar = Number.isFinite(estadoNum) ? this.estadosUpdateMensajero.includes(estadoNum) : false;
-      }
-      const estadoActual = visita.estado;
+      }      
       
       return puedeEditar;
     }
 
-    cambiarEstatus(visitaId: string, result: any) {
-    // Construir el objeto de request
+    cambiarEstatus(visitaId: string, result: any) {    
     const request: ChangeVisitaStatusRequest = {
       toStatus: result.toStatus,
       observaciones: result.observaciones,
@@ -503,14 +523,11 @@ export class CostosPageComponent {
     };
 
     this.api.changeStatus(visitaId, request).subscribe({
-      next: (response) => {
-        // Manejar éxito
+      next: (response) => {        
         this.load();
-        this.snackBar.open('Estatus cambiado exitosamente', 'Cerrar', { duration: 3000 });
-        // Puedes recargar los datos o actualizar la vista aquí
+        this.snackBar.open('Estatus cambiado exitosamente', 'Cerrar', { duration: 3000 });        
       },
-      error: (error) => {
-        // Manejar error
+      error: (error) => {        
         console.error('Error al cambiar estatus', error);
         this.snackBar.open('Error al cambiar estatus', 'Cerrar', { duration: 3000 });
       }
@@ -542,7 +559,7 @@ export class CostosPageComponent {
     }
 
     selectFromList(p: PacienteLite) {
-      this.onPatientSelected(p);           // tu lógica existente
+      this.onPatientSelected(p);
       this.searchForm.controls.searchTerm.setValue(p.nombre, { emitEvent: false });
       this.open = false;
     }
@@ -564,16 +581,31 @@ verHistorial(visitaId: string) {
   // Puedes abrir otro diálogo o drawer que consuma getStatusHistory(visitaId)
 }
 
-// Mapa de transiciones (mismo que el backend)
-allowedTransitions: Record<string, string[]> = {
-  'Creada': ['Registrada','Cancelada'],
-  'Registrada': ['Enviada a laboratorio','Cancelada'],
-  'Enviada a laboratorio': ['Lista en laboratorio'],
-  'Lista en laboratorio': ['Recibida en sucursal central','Recibida en sucursal origen'],
-  'Recibida en sucursal central': ['Lista para entrega'],
-  'Recibida en sucursal origen': ['Lista para entrega'],
-  'Lista para entrega': ['Entregada al cliente'],
-  'Entregada al cliente': [],
-  'Cancelada': []
-};
+nextStatus() {
+    if (this.currentOrderStatus < OrderStatus.ENTREGADA_AL_CLIENTE) {
+      this.currentOrderStatus++;
+    }
+  }
+
+  prevStatus() {
+    if (this.currentOrderStatus > OrderStatus.CREADA) {
+      this.currentOrderStatus--;
+    }
+  }
+
+  onRowSelect(row: VisitaCostoRow) {
+  this.selectedRow = row;
+  
+  // Convierte a número si viene como string
+  const estadoNum = typeof row.estado === 'number' 
+    ? row.estado 
+    : parseInt(row.estado as any, 10);
+
+  // Valida y actualiza el timeline
+  if (!isNaN(estadoNum)) {
+    this.currentOrderStatus = estadoNum;
+  }
+
+  console.log('Fila seleccionada:', row);
+}
 }
