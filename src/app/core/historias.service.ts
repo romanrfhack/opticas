@@ -3,7 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import {
   CrearHistoriaRequest, EnviarLabRequest, PacienteLite, PagoRequest, PagoResponse, UltimaHistoriaItem,
-  VisitaCompleta
+  VisitaCompleta,
+  VisitaStatusHistoryDto
 } from './models/clinica.models';
 import { VisitaDetalle } from '../clinica/visita-detalle.component';
 import { Observable } from 'rxjs';
@@ -74,5 +75,11 @@ export class HistoriasService {
 obtenerPagos(historiaId: string) {
   return this.http.get<PagoResponse[]>(`${this.base}/historias/${historiaId}/pagos`);
 }
+
+// 🔹 Nuevo método
+getStatusHistory(visitaId: string) {
+  return this.http.get<VisitaStatusHistoryDto>(`${this.base}/historias/${visitaId}/status-history`);
+}
+
 
 }

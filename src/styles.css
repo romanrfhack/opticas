@@ -75,3 +75,9 @@ body {
   background-color: #3b82f6 !important;
   color: white !important;
 }
+
+::ng-deep .mat-mdc-dialog-container.historial-dialog .mdc-dialog__surface {
+  border-radius: 1rem;
+  border: 2px solid #06b6d4;
+  box-shadow: 0 4px 30px rgba(6, 182, 212, 0.2);
+}

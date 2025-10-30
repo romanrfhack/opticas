@@ -20,6 +20,7 @@ import { PacientesService } from '../../core/pacientes.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, debounceTime, distinctUntilChanged, filter, of, switchMap, tap } from 'rxjs';
 import { OrderStatusTimelineComponent } from './order-status-timeline.component';
+import { VisitaStatusHistoryComponent } from './visita-status-history.component';
 
 @Component({
   standalone: true,
@@ -153,17 +154,17 @@ import { OrderStatusTimelineComponent } from './order-status-timeline.component'
 
     <!-- Versión horizontal -->
     <div>
-      <h2 class="text-lg font-semibold mb-2 text-gray-700">Flujo Horizontal</h2>
+      <h2 class="text-lg font-semibold mb-2 text-gray-700">Flujo</h2>
       <app-order-status-timeline 
         [currentStatus]="currentOrderStatus" 
         orientation="horizontal">
       </app-order-status-timeline>
     </div>
 
-    <div class="flex justify-center space-x-2">
+    <!-- <div class="flex justify-center space-x-2">
       <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" (click)="prevStatus()">◀ Anterior</button>
       <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" (click)="nextStatus()">Siguiente ▶</button>
-    </div>
+    </div> -->
 
   </div>
 
@@ -228,15 +229,33 @@ import { OrderStatusTimelineComponent } from './order-status-timeline.component'
           </td>
         </ng-container>
 
-        <ng-container matColumnDef="acciones">
+        <!-- <ng-container matColumnDef="acciones">
           <th mat-header-cell *matHeaderCellDef></th>
           <td mat-cell *matCellDef="let r">
             <button mat-icon-button *ngIf="validarPuedeEditar(r)" (click)="abrirCambiarEstatus(r)" title="Cambiar estatus">
               <mat-icon>sync</mat-icon>
             </button>
-            <!-- <button mat-icon-button (click)="verHistorial(r.id)" title="Ver historial">
+            <button mat-icon-button (click)="verHistorial(r.id)" title="Ver historial">
               <mat-icon>history</mat-icon>
-            </button> -->
+            </button>
+          </td>
+        </ng-container> -->
+
+        <ng-container matColumnDef="acciones">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let r">
+            <button mat-icon-button *ngIf="validarPuedeEditar(r)" 
+                    (click)="abrirCambiarEstatus(r)" 
+                    title="Cambiar estatus">
+              <mat-icon>sync</mat-icon>
+            </button>
+
+            <button mat-icon-button 
+                    (click)="verHistorial(r.id)" 
+                    title="Ver historial de estatus"
+                    class="text-[#06b6d4] hover:text-[#0891b2] transition-colors">
+              <mat-icon>history</mat-icon>
+            </button>
           </td>
         </ng-container>
 
@@ -578,8 +597,15 @@ export class CostosPageComponent {
   }
  
 verHistorial(visitaId: string) {
-  // Puedes abrir otro diálogo o drawer que consuma getStatusHistory(visitaId)
+  this.dialog.open(VisitaStatusHistoryComponent, {
+    width: '90vw',
+    maxWidth: '1200px',
+    height: '90vh',
+    data: { visitaId },
+    panelClass: 'historial-dialog'
+  });
 }
+
 
 nextStatus() {
     if (this.currentOrderStatus < OrderStatus.ENTREGADA_AL_CLIENTE) {

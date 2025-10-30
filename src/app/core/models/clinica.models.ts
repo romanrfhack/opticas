@@ -305,3 +305,23 @@ export interface PagoResponse {
   nota?: string;
   fecha: string;  
 }
+
+export interface StatusStepDto {
+  fromStatus: string;
+  toStatus: string;
+  usuarioNombre: string;
+  timestampUtc: string;
+  observaciones?: string;
+  labTipo?: string;
+  labNombre?: string;
+  tiempoTranscurrido: string;
+}
+
+export interface VisitaStatusHistoryDto {
+  pacienteNombre: string;
+  pacienteTelefono: string;
+  sucursalNombre: string;
+  usuarioAtendio: string;
+  fechaVisita: string;
+  estatus: StatusStepDto[];
+}
