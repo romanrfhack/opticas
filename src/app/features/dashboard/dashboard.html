@@ -114,40 +114,52 @@
     <div class="charts-grid">
 
       <!-- Pacientes Atendidos -->
-      <div class="chart-card">
-        <div class="chart-header">
-          <h3>Pacientes Atendidos</h3>
-          <span class="chart-subtitle">Total vs Nuevos pacientes</span>
-        </div>
-        <div class="chart-container">
-          <div class="chart-simulation">
-            <div class="bar-chart-sim">
-              <div
-                *ngFor="let day of patientAttendanceData().labels; let i = index"
-                class="bar-group"
-              >
-                <div
-                  class="bar total"
-                  [style.height]="(patientAttendanceData().datasets[0].data[i] || 0) * 2 + 'px'"
-                ></div>
-                <div
-                  class="bar new"
-                  [style.height]="(patientAttendanceData().datasets[1].data[i] || 0) * 2 + 'px'"
-                ></div>
-                <span class="bar-label">{{ day }}</span>
-              </div>
-            </div>
-            <div class="chart-legend">
-              <span class="legend-item"
-                ><div class="color total"></div> Total</span
-              >
-              <span class="legend-item"
-                ><div class="color new"></div> Nuevos</span
-              >
-            </div>
-          </div>
+      <!-- Pacientes Atendidos -->
+<div class="bg-white rounded-xl shadow p-5 flex flex-col">
+  <div class="mb-4">
+    <h3 class="text-lg font-semibold text-gray-800">Pacientes Atendidos</h3>
+    <span class="text-sm text-gray-500">Total vs Nuevos pacientes</span>
+  </div>
+
+  <div class="relative flex flex-col items-center justify-between overflow-hidden">
+    <!-- Contenedor con scroll horizontal si hay muchas etiquetas -->
+    <div class="w-full overflow-x-auto">
+      <div
+        class="flex items-end justify-start gap-3 min-w-[500px] md:min-w-full h-[220px] px-4 pb-3"
+      >
+        <div
+          *ngFor="let day of patientAttendanceData().labels; let i = index"
+          class="flex flex-col items-center justify-end gap-1 w-[30px] min-w-[30px]"
+        >
+          <div
+            class="w-3 rounded-t-md bg-green-500 transition-all duration-300"
+            [style.height]="(patientAttendanceData().datasets[0].data[i] || 0) * 2 + 'px'"
+          ></div>
+          <div
+            class="w-3 rounded-t-md bg-blue-500 transition-all duration-300"
+            [style.height]="(patientAttendanceData().datasets[1].data[i] || 0) * 2 + 'px'"
+          ></div>
+          <span
+            class="text-[0.65rem] text-gray-600 whitespace-nowrap rotate-[-30deg] origin-top"
+          >
+            {{ day }}
+          </span>
         </div>
       </div>
+    </div>
+
+    <!-- Leyenda -->
+    <div class="flex justify-center items-center gap-6 mt-4">
+      <span class="flex items-center gap-2 text-sm text-gray-700">
+        <span class="w-3 h-3 rounded-full bg-green-500"></span> Total
+      </span>
+      <span class="flex items-center gap-2 text-sm text-gray-700">
+        <span class="w-3 h-3 rounded-full bg-blue-500"></span> Nuevos
+      </span>
+    </div>
+  </div>
+</div>
+
 
       <!-- Métodos de pago -->
       <div class="chart-card">
@@ -268,7 +280,7 @@
         </div>
       </div>
 
-      <!-- Ingresos mensuales -->
+      <!-- Ingresos mensuales
       <div class="chart-card wide">
         <div class="chart-header">
           <h3>Ingresos Mensuales</h3>
@@ -337,7 +349,7 @@
             No hay datos de ingresos
           </div>
         </div>
-      </div>
+      </div> -->
 
     </div>
   </div>
